@@ -1,0 +1,25 @@
+# 统一换行符策略。
+#
+# 本仓库统一使用 LF。Windows 上若 core.autocrlf=true，Git 会在检出时把文本文件
+# 转成 CRLF，导致 scripts/check.mjs 的换行检查失败，并制造大量无意义的 diff。
+# 这里显式声明，保证任何平台上检出与提交都是 LF。
+
+* text=auto eol=lf
+
+# 明确标记为二进制，避免 Git 尝试做行尾转换或文本 diff
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.docx  binary
+*.zip   binary
+*.apk   binary
+*.aab   binary
+*.woff  binary
+*.woff2 binary
+
+# GitHub 语言统计：让 Web 端占主导，避免把文档算成主要语言
+docs/**   linguist-documentation
+*.md      linguist-documentation

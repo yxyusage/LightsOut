@@ -1,0 +1,21 @@
+# ---- Gradle ----
+.gradle/
+build/
+local.properties
+gradle/wrapper/gradle-wrapper.jar
+
+# ---- Android 产物 ----
+*.apk
+*.aab
+*.ap_
+*.dex
+app/release/
+app/debug/
+captures/
+.cxx/
+
+# ---- IDE ----
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

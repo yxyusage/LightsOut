@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/xideng_surface"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="20dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="40dp">
+
+        <!-- ───────── 睡眠计划（PRD 2.1） ───────── -->
+        <TextView
+            style="@style/XidengSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="睡眠计划" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchPlanEnabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="启用熄灯计划"
+            android:textColor="@color/xideng_text_primary" />
+
+        <Button
+            android:id="@+id/btnWeekdayWindow"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="工作日时段" />
+
+        <Button
+            android:id="@+id/btnWeekendWindow"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="周末时段" />
+
+        <Button
+            android:id="@+id/btnWarnMinutes"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="提前提醒" />
+
+        <TextView
+            android:id="@+id/planHintText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp" />
+
+        <!-- ───────── 白名单（PRD 2.2.3） ───────── -->
+        <TextView
+            style="@style/XidengSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="白名单应用" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="所有白名单应用共用一份总时长，用完后当晚不能再打开。电话与短信不受限制、也不占用时长。"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btnWhitelistTotal"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="总可用时长" />
+
+        <TextView
+            android:id="@+id/whitelistUsageText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp" />
+
+        <LinearLayout
+            android:id="@+id/whitelistContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="vertical" />
+
+        <Button
+            android:id="@+id/btnAddWhitelistApp"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="添加应用" />
+
+        <!-- ───────── 助眠音频（PRD 2.3） ───────── -->
+        <TextView
+            style="@style/XidengSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="助眠音频" />
+
+        <Button
+            android:id="@+id/btnAudioPreset"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="音色" />
+
+        <Button
+            android:id="@+id/btnAudioDuration"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="播放时长" />
+
+        <TextView
+            android:id="@+id/audioVolumeLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="音量"
+            android:textColor="@color/xideng_text_secondary"
+            android:textSize="13sp" />
+
+        <SeekBar
+            android:id="@+id/seekAudioVolume"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="白噪音由 AudioTrack 实时合成，不含任何音频素材文件——零版权风险，也不占安装体积。"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp" />
+
+        <!-- ───────── AI 文案（PRD 2.4） ───────── -->
+        <TextView
+            style="@style/XidengSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="AI 场景化文案" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchAiEnabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="启用 AI 增强模式"
+            android:textColor="@color/xideng_text_primary" />
+
+        <EditText
+            android:id="@+id/inputAiBaseUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="接口地址，如 https://api.openai.com/v1"
+            android:importantForAutofill="no"
+            android:inputType="textUri"
+            android:textColor="@color/xideng_text_primary"
+            android:textColorHint="@color/xideng_text_faint" />
+
+        <EditText
+            android:id="@+id/inputAiModel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="模型名称，如 gpt-4o-mini"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:textColor="@color/xideng_text_primary"
+            android:textColorHint="@color/xideng_text_faint" />
+
+        <EditText
+            android:id="@+id/inputAiApiKey"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="API Key（仅保存在本机）"
+            android:importantForAutofill="no"
+            android:inputType="textPassword"
+            android:textColor="@color/xideng_text_primary"
+            android:textColorHint="@color/xideng_text_faint" />
+
+        <Button
+            android:id="@+id/btnSaveAi"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="保存 AI 配置" />
+
+        <Button
+            android:id="@+id/btnTestAi"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="测试连接" />
+
+        <TextView
+            android:id="@+id/aiStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp" />
+
+        <!-- ───────── 安全（PRD 2.2.5 / 三） ───────── -->
+        <TextView
+            style="@style/XidengSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="安全与额度" />
+
+        <Button
+            android:id="@+id/btnChangePassword"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="修改紧急解除密码" />
+
+        <Button
+            android:id="@+id/btnResetQuota"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="重置本周解除额度" />
+
+        <TextView
+            android:id="@+id/tamperText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btnClearData"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="清除全部本地数据" />
+
+        <!-- ───────── 关于与数据溯源 ───────── -->
+        <TextView
+            style="@style/XidengSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="关于与数据溯源" />
+
+        <TextView
+            android:id="@+id/aboutText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp" />
+    </LinearLayout>
+</ScrollView>

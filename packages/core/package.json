@@ -1,0 +1,12 @@
+{
+  "name": "@xideng/core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "熄灯早睡平台无关核心：睡眠计划、场景识别、文案引擎、额度、防护守卫",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "dependencies": {}
+}

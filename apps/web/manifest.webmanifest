@@ -1,0 +1,20 @@
+{
+  "name": "熄灯早睡",
+  "short_name": "熄灯早睡",
+  "description": "到点全屏接管设备的强制型睡眠辅助工具。设定熄灯时段，时间一到自动进入黑屏界面，屏蔽娱乐应用、播放助眠音频、用 AI 生成睡前文案陪伴你入睡。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "categories": ["health", "lifestyle", "productivity"],
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

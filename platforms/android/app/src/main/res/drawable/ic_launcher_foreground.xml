@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PRD 4.2：核心元素为带拉绳的灯泡，简约线性风格 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 灯泡 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M40,40 a14,14 0 1,0 28,0 a14,14 0 1,0 -28,0"
+        android:strokeColor="#EDEDED"
+        android:strokeWidth="3.5" />
+
+    <!-- 灯颈 -->
+    <path
+        android:fillColor="#EDEDED"
+        android:pathData="M49,51 h10 v5 h-10 z" />
+
+    <!-- 灯座 -->
+    <path
+        android:fillColor="#EDEDED"
+        android:pathData="M47,57 h14 v3.4 h-14 z" />
+
+    <!-- 灯绳 -->
+    <path
+        android:pathData="M54,60.4 L54,74"
+        android:strokeColor="#EDEDED"
+        android:strokeWidth="2.6" />
+
+    <!-- 拉环 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M50,77.5 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0"
+        android:strokeColor="#EDEDED"
+        android:strokeWidth="2.4" />
+</vector>

@@ -1,0 +1,361 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Platform;
+using Avalonia.Threading;
+using Xideng.Desktop.Core;
+
+namespace Xideng.Desktop.Views;
+
+/// <summary>
+/// 强制熄灯全屏窗口（PRD 2.2.1 / 2.2.2）。
+///
+/// 这是桌面端相对 Web 端唯一的<b>实质能力优势</b>，因此务必做实：
+/// <list type="bullet">
+///   <item>无边框、覆盖整个屏幕、<c>Topmost = true</c>；</item>
+///   <item>多显示器：协调器在每个屏幕上各开一个本窗口；</item>
+///   <item>禁止关闭：拦截 <see cref="OnClosing"/> 并取消，除非已解除熄灯或应用正在退出；</item>
+///   <item>纯黑背景 + 低亮度白字：实时时间、剩余时长、轮播文案、场景标签；</item>
+///   <item>连续点击 5 次触发紧急解除入口（PRD 2.2.5）。</item>
+/// </list>
+/// </summary>
+public partial class BlackoutWindow : Window
+{
+    private readonly DesktopCoordinator? _coordinator;
+    private readonly TapCounter _taps;
+
+    private DispatcherTimer? _animTimer;
+    private DateTime _animStartedAt;
+    private bool _entrance = true;
+    private bool _allowClose;
+    private double _brightness = 0.62;
+    private string _shownCopyId = string.Empty;
+    private DispatcherTimer? _noticeTimer;
+
+    /// <summary>供 XAML 设计器 / 加载器使用的无参构造。</summary>
+    public BlackoutWindow()
+        : this(null)
+    {
+    }
+
+    public BlackoutWindow(DesktopCoordinator? coordinator)
+    {
+        _coordinator = coordinator;
+        _taps = new TapCounter(onTrigger: ShowEmergencyPanel);
+
+        InitializeComponent();
+
+        WhitelistButton.Click += (_, _) => ToggleWhitelistPanel();
+        WhitelistCloseButton.Click += (_, _) => WhitelistPanel.IsVisible = false;
+        AudioButton.Click += (_, _) => ShowNotice(
+            "桌面端尚未实现助眠音频播放（PRD 2.3）。该能力目前在 Web/PWA 端通过 Web Audio 实时合成提供。");
+        SettingsButton.Click += (_, _) => _coordinator?.ShowSettings();
+        EmergencyCancelButton.Click += (_, _) => EmergencyPanel.IsVisible = false;
+        EmergencyConfirmButton.Click += (_, _) => ConfirmEmergencyUnlock();
+        PasswordBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                ConfirmEmergencyUnlock();
+            }
+        };
+    }
+
+    // ── 生命周期 ────────────────────────────────────────────
+
+    /// <summary>允许真正关闭（应用退出或已解除熄灯时使用）。</summary>
+    public void AllowClose() => _allowClose = true;
+
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        // PRD 三：禁止强制停止 / 关闭——熄灯期间窗口不可被 Alt+F4 或系统关闭
+        if (!_allowClose && (_coordinator?.IsBlackoutActive ?? false))
+        {
+            e.Cancel = true;
+            ShowNotice("熄灯期间无法关闭窗口。若确需退出，请使用紧急解除。");
+            return;
+        }
+
+        _animTimer?.Stop();
+        base.OnClosing(e);
+    }
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+
+        // PRD 2.2.5：连续点击屏幕 5 次触发紧急解除入口
+        _taps.Tap();
+    }
+
+    // ── 屏幕与置顶 ──────────────────────────────────────────
+
+    /// <summary>把窗口铺满指定屏幕（含任务栏区域）。</summary>
+    public void PlaceOn(Screen screen)
+    {
+        var bounds = screen.Bounds;
+        var scaling = screen.Scaling <= 0 ? 1d : screen.Scaling;
+
+        Position = new PixelPoint(bounds.X, bounds.Y);
+        Width = bounds.Width / scaling;
+        Height = bounds.Height / scaling;
+    }
+
+    /// <summary>轻量刷新 Z 序（不抢焦点），用于周期性重申置顶。</summary>
+    public void RefreshTopmost()
+    {
+        Topmost = false;
+        Topmost = true;
+    }
+
+    /// <summary>把窗口强硬拉回最前并抢回焦点（检测到非白名单应用抢焦点时调用）。</summary>
+    public void ReassertTopmost()
+    {
+        RefreshTopmost();
+        try
+        {
+            Activate();
+        }
+        catch (Exception)
+        {
+            // 窗口尚未可见时 Activate 可能失败，忽略即可
+        }
+    }
+
+    /// <summary>进入熄灯：显示窗口并播放入场动画。</summary>
+    public void PresentForBlackout()
+    {
+        if (!IsVisible)
+        {
+            Show();
+        }
+
+        // 协调器每 250ms 调用一次本方法，必须避免把动画反复重启导致永远播不完
+        if (_animTimer is not null && _entrance)
+        {
+            return;
+        }
+
+        if (_animTimer is null && MainContent.Opacity > 0)
+        {
+            // 已经在熄灯展示态（入场动画已结束），不重复播放
+            return;
+        }
+
+        StartAnimation(entrance: true);
+    }
+
+    /// <summary>退出熄灯：播放退场动画后隐藏窗口。</summary>
+    public void BeginExitAndHide()
+    {
+        if (!IsVisible)
+        {
+            return;
+        }
+
+        // 退场动画已在播放时不要重启
+        if (_animTimer is not null && !_entrance)
+        {
+            return;
+        }
+
+        StartAnimation(entrance: false);
+    }
+
+    // ── 内容刷新 ────────────────────────────────────────────
+
+    public void ApplySnapshot(EngineSnapshot snapshot)
+    {
+        _brightness = Math.Clamp(snapshot.Settings.Blackout.Brightness, 0.15, 1);
+
+        ClockText.Text = TimeUtil.FormatClock(snapshot.At, seconds: true);
+        RemainingText.Text = $"距离熄灯结束还有 {TimeUtil.FormatDurationCn(snapshot.RemainingMs)}";
+        SceneTag.Text = $"{snapshot.Scene.SceneLabel} · {snapshot.Scene.WeekdayName} · {snapshot.Scene.TimeBucketLabel}";
+        QuotaText.Text = $"本周剩余紧急解除 {snapshot.Quota.Remaining} / {snapshot.Quota.Total} 次";
+
+        if (!string.Equals(_shownCopyId, snapshot.Copy.Id, StringComparison.Ordinal))
+        {
+            _shownCopyId = snapshot.Copy.Id;
+            CopyText.Text = snapshot.Copy.Text;
+        }
+
+        if (WhitelistPanel.IsVisible)
+        {
+            RefreshWhitelistPanel();
+        }
+
+        // 动画已结束的情况下，让文字亮度跟随设置
+        if (_animTimer is null)
+        {
+            MainContent.Opacity = _brightness;
+        }
+    }
+
+    // ── 入场 / 退场动画（PRD 4.3，约 1.5 秒）────────────────
+
+    private void StartAnimation(bool entrance)
+    {
+        _entrance = entrance;
+        _animStartedAt = DateTime.UtcNow;
+
+        WhitelistPanel.IsVisible = false;
+        EmergencyPanel.IsVisible = false;
+        LampLayer.Opacity = 1;
+
+        _animTimer?.Stop();
+        _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _animTimer.Tick += (_, _) => StepAnimation();
+        _animTimer.Start();
+        StepAnimation();
+    }
+
+    private void StepAnimation()
+    {
+        var elapsed = (DateTime.UtcNow - _animStartedAt).TotalMilliseconds;
+        var progress = Math.Clamp(elapsed / Limits.AnimationMs, 0, 1);
+
+        // e = "灯还亮着"的程度：入场 1 → 0，退场 0 → 1
+        var e = _entrance ? 1 - progress : progress;
+
+        Bulb.Opacity = 0.05 + (0.95 * e);
+        LampLayer.Opacity = e;
+        DimLayer.Opacity = e;
+        MainContent.Opacity = (1 - e) * _brightness;
+
+        if (progress < 1)
+        {
+            return;
+        }
+
+        _animTimer?.Stop();
+        _animTimer = null;
+
+        if (_entrance)
+        {
+            LampLayer.Opacity = 0;
+            DimLayer.Opacity = 0;
+            MainContent.Opacity = _brightness;
+        }
+        else
+        {
+            Hide();
+        }
+    }
+
+    // ── 白名单 ──────────────────────────────────────────────
+
+    private void ToggleWhitelistPanel()
+    {
+        WhitelistPanel.IsVisible = !WhitelistPanel.IsVisible;
+        if (WhitelistPanel.IsVisible)
+        {
+            RefreshWhitelistPanel();
+        }
+    }
+
+    private void RefreshWhitelistPanel()
+    {
+        var settings = _coordinator?.Settings.Value;
+        if (settings is null)
+        {
+            return;
+        }
+
+        WhitelistSummary.Text =
+            $"所有白名单应用共用总时长 {settings.Whitelist.TotalMinutes} 分钟（上限 60 分钟）；" +
+            "系统电话 / 短信不受限且不占用时长。桌面端通过「全屏置顶 + 前台进程监听」实现等效约束：" +
+            "检测到非白名单应用抢到前台焦点时，熄灯窗口会立即重新接管。";
+
+        WhitelistList.Children.Clear();
+        foreach (var app in settings.Whitelist.Apps)
+        {
+            var process = string.IsNullOrWhiteSpace(app.ProcessName) ? "未绑定进程" : app.ProcessName;
+            var suffix = app.CountsAgainstQuota ? string.Empty : " · 不占用时长";
+            var locked = app.Removable ? string.Empty : " · 不可移除";
+
+            WhitelistList.Children.Add(new TextBlock
+            {
+                Text = $"{app.Name}（进程：{process}）{suffix}{locked}",
+                FontSize = 13,
+                Foreground = new SolidColorBrush(Color.Parse("#B0B0B0")),
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 520,
+            });
+        }
+    }
+
+    // ── 紧急解除 ────────────────────────────────────────────
+
+    private void ShowEmergencyPanel()
+    {
+        var settings = _coordinator?.Settings.Value;
+        var quota = _coordinator?.Current.Quota;
+
+        if (settings is null || quota is null)
+        {
+            return;
+        }
+
+        if (quota.Remaining <= 0)
+        {
+            ShowNotice("本周紧急解除额度已用完，只能等待熄灯时段结束。");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(settings.Emergency.PasswordHash))
+        {
+            ShowNotice("尚未设置紧急解除密码，请先在设置窗口中设置。");
+            return;
+        }
+
+        EmergencyHint.Text = $"输入密码可退出本次熄灯。本周剩余 {quota.Remaining} 次，每解除一次消耗 1 次。";
+        EmergencyMessage.Text = string.Empty;
+        PasswordBox.Text = string.Empty;
+        EmergencyPanel.IsVisible = true;
+        PasswordBox.Focus();
+    }
+
+    private void ConfirmEmergencyUnlock()
+    {
+        if (_coordinator is null)
+        {
+            return;
+        }
+
+        var result = _coordinator.TryEmergencyUnlock(PasswordBox.Text ?? string.Empty);
+        if (result.Ok)
+        {
+            EmergencyPanel.IsVisible = false;
+            ShowNotice($"已解除本次熄灯，本周剩余 {result.Remaining} 次。次日将按计划自动恢复。");
+            return;
+        }
+
+        EmergencyMessage.Text = result.Reason switch
+        {
+            "bad-password" => "密码不正确。",
+            "quota-exhausted" => "本周解除额度已用完。",
+            "not-active" => "当前不在熄灯时段内。",
+            "no-password" => "尚未设置紧急解除密码。",
+            _ => "解除失败。",
+        };
+    }
+
+    // ── 提示条 ──────────────────────────────────────────────
+
+    private void ShowNotice(string message)
+    {
+        NoticeText.Text = message;
+        NoticeBar.IsVisible = true;
+
+        _noticeTimer?.Stop();
+        _noticeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
+        _noticeTimer.Tick += (_, _) =>
+        {
+            NoticeBar.IsVisible = false;
+            _noticeTimer?.Stop();
+            _noticeTimer = null;
+        };
+        _noticeTimer.Start();
+    }
+}

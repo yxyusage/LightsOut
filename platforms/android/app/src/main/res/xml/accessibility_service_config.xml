@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  只监听窗口状态切换事件，且不读取窗口内容。
+  判定"用户是否切到了非白名单应用"只需要 AccessibilityEvent.getPackageName()，
+  因此 canRetrieveWindowContent 保持 false —— 少一项能力，多一分可信。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault"
+    android:canRetrieveWindowContent="false"
+    android:description="@string/accessibility_service_description"
+    android:notificationTimeout="100" />

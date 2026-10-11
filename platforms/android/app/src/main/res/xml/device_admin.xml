@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  设备管理员策略声明（PRD 三：禁止强制停止、防卸载）。
+
+  注意：这里刻意**不申请任何设备策略**（空 <uses-policies/>）。
+  我们需要的只是"存在一个活跃的设备管理员"这一事实本身：
+   · 活跃状态下，系统设置里的「强行停止」按钮会被禁用；
+   · 卸载前必须先到设置里手动取消设备管理员，多出一道明确的减速带。
+  至于擦除数据、重置密码、锁屏等策略，本项目一个都不需要，
+  申请了反而会让我们在安装界面上索要不必要的高危权限。
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies />
+</device-admin>

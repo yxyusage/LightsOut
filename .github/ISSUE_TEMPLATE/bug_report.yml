@@ -1,0 +1,57 @@
+name: Bug 反馈
+description: 报告一个可复现的问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量填写完整，尤其是**复现步骤**与**浏览器信息**。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述
+      description: 实际发生了什么？你期望发生什么？
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 …
+        2. 点击 …
+        3. 看到 …
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: 浏览器与版本
+      placeholder: 例如 Chrome 131 / Android 14
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 端
+      options:
+        - Web / PWA
+        - Android
+        - 桌面端（Windows / macOS）
+        - 不确定
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 控制台报错（选填）
+      description: 打开浏览器开发者工具 Console，把红色报错贴在这里
+      render: shell
+    validations:
+      required: false

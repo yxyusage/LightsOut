@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PRD 4.1：极简克制风，主色调为纯黑、深灰，搭配低饱和度白色文字 -->
+    <color name="xideng_black">#FF000000</color>
+    <color name="xideng_surface">#FF0B0B0C</color>
+    <color name="xideng_surface_alt">#FF141416</color>
+    <color name="xideng_outline">#FF2A2A2E</color>
+
+    <!-- 低饱和度白色：夜间不刺眼（PRD 4.4） -->
+    <color name="xideng_text_primary">#FFEDEDED</color>
+    <color name="xideng_text_secondary">#FFA8A8AE</color>
+    <color name="xideng_text_faint">#FF6E6E75</color>
+
+    <color name="xideng_primary">#FF8E9BD6</color>
+    <color name="xideng_primary_dark">#FF5C6699</color>
+    <color name="xideng_danger">#FFC97A7A</color>
+    <color name="xideng_success">#FF7FB08A</color>
+
+    <color name="ic_launcher_background">#FF0B0B0C</color>
+</resources>

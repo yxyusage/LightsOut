@@ -1,0 +1,301 @@
+熄灯早睡 · 桌面端自检 (--selftest)
+运行平台：Win32NT / Microsoft Windows NT 10.0.26200.0
+.NET 版本：10.0.6
+应用版本：1.0.0    设置结构版本：1
+
+── time · 时间基础工具 ──
+  [PASS] toMinutes("00:00") == 0
+  [PASS] toMinutes("23:00") == 1380
+  [PASS] toMinutes("7:05") == 425
+  [PASS] fromMinutes(1380) == "23:00"
+  [PASS] fromMinutes(0) == "00:00"
+  [PASS] fromMinutes(1500) 跨天取模 == "01:00"
+  [PASS] fromMinutes(-60) == "23:00"
+  [PASS] toMinutes("24:00") 抛错
+  [PASS] toMinutes("23:60") 抛错
+  [PASS] toMinutes("abc") 抛错
+  [PASS] toMinutes("") 抛错
+  [PASS] toMinutes(null) 抛错
+  [PASS] dateKey(2026-01-04)
+  [PASS] parseDateKey 往返一致
+  [PASS] parseDateKey("2026/01/04") 抛错
+  [PASS] daysBetween 忽略时分秒(跨日)
+  [PASS] daysBetween(1月1日, 2月1日) == 31
+  [PASS] daysBetween(3月1日, 2月28日) == -1
+  [PASS] formatDurationCn(6h23m)
+  [PASS] formatDurationCn(1h)
+  [PASS] formatDurationCn(23m12s)
+  [PASS] formatDurationCn(45s)
+  [PASS] formatDurationCn(0)
+  [PASS] formatDurationCn(-5000) 不为负
+  [PASS] formatCountdownCn(45s)
+  [PASS] formatCountdownCn(754s)
+  [PASS] weekdayNames 与 DayOfWeek 对齐（周日）
+  [PASS] weekdayNames 与 DayOfWeek 对齐（周五）
+
+── holidays · 2026 年数据逐日核对（对照国办发明电〔2025〕7号） ──
+  [PASS] 节日数量为 7
+  [PASS] 调休上班日总数为 6
+  [PASS] 逐日核对 元旦首日 周四（2026-01-01）
+  [PASS] 逐日核对 元旦末日 周六（2026-01-03）
+  [PASS] 逐日核对 元旦调休上班 周日（2026-01-04）
+  [PASS] 逐日核对 春节首日 周日（2026-02-15）
+  [PASS] 逐日核对 春节末日 周一（2026-02-23）
+  [PASS] 逐日核对 春节调休上班 周六（2026-02-14）
+  [PASS] 逐日核对 春节调休上班 周六（2026-02-28）
+  [PASS] 逐日核对 清明首日 周六（2026-04-04）
+  [PASS] 逐日核对 清明末日 周一（2026-04-06）
+  [PASS] 逐日核对 劳动节首日 周五（2026-05-01）
+  [PASS] 逐日核对 劳动节末日 周二（2026-05-05）
+  [PASS] 逐日核对 劳动节调休上班 周六（2026-05-09）
+  [PASS] 逐日核对 端午首日 周五（2026-06-19）
+  [PASS] 逐日核对 端午末日 周日（2026-06-21）
+  [PASS] 逐日核对 中秋首日 周五（2026-09-25）
+  [PASS] 逐日核对 中秋末日 周日（2026-09-27）
+  [PASS] 逐日核对 国庆首日 周四（2026-10-01）
+  [PASS] 逐日核对 国庆末日 周三（2026-10-07）
+  [PASS] 逐日核对 国庆调休上班 周日（2026-09-20）
+  [PASS] 逐日核对 国庆调休上班 周六（2026-10-10）
+  [PASS] 元旦 放假天数应为 3 天
+  [PASS] 元旦 实际放假天数
+  [PASS] 春节 放假天数应为 9 天
+  [PASS] 春节 实际放假天数
+  [PASS] 清明节 放假天数应为 3 天
+  [PASS] 清明节 实际放假天数
+  [PASS] 劳动节 放假天数应为 5 天
+  [PASS] 劳动节 实际放假天数
+  [PASS] 端午节 放假天数应为 3 天
+  [PASS] 端午节 实际放假天数
+  [PASS] 中秋节 放假天数应为 3 天
+  [PASS] 中秋节 实际放假天数
+  [PASS] 国庆节 放假天数应为 7 天
+  [PASS] 国庆节 实际放假天数
+  [PASS] 调休上班日全部登记为 makeup 且不同时为放假、且都落在周末
+  [PASS] 2026-02-18 归属春节
+  [PASS] 2026-10-03 是假日
+  [PASS] 2026-10-08 不是假日（节后第一天）
+  [PASS] 2026-12-31 无节日数据，按普通日期处理
+  [PASS] 2026-02-14 今天是调休上班(makeup)
+  [PASS] 2026-02-14 明天是春节假期
+  [PASS] 2026-02-14 明天 kind == holiday
+  [PASS] 2026-02-23 今天是春节
+  [PASS] 2026-02-23 明天无节日（假期结束）
+  [PASS] 覆盖年份包含 2026
+  [PASS] 2026 年有数据
+  [PASS] 2030 年无数据（不会误判为节日）
+  [PASS] 数据来源标注了文号
+
+── schedule · 睡眠计划与相位（PRD 2.1 / 2.2.1） ──
+  [PASS] 周五 23:00 能构造出时段
+  [PASS] 跨天时段 crossesMidnight == true
+  [PASS] 时段开始日 == 2026-09-04
+  [PASS] 时段结束日 == 2026-09-05（跨天）
+  [PASS] 时段结束于 07:00
+  [PASS] 时段长度为 8 小时
+  [PASS] 凌晨 02:00 处于熄灯中（检查昨天开启的时段）
+  [PASS] 凌晨 02:00 归属周五那一次时段
+  [PASS] 22:44 尚未预告
+  [PASS] 22:45 进入预告
+  [PASS] 预告剩余 15 分钟
+  [PASS] 23:00 进入熄灯
+  [PASS] 07:00 熄灯结束回到 IDLE
+  [PASS] 并指向 2026-09-05 的下一次时段
+  [PASS] 下一次时段开始于 23:00
+  [PASS] 关闭计划后一律为 OFF
+  [PASS] 关闭计划后 window 为 null
+  [PASS] start == end 视为未配置（不产生 24 小时锁定）
+  [PASS] start == end 时 activeWindowAt 为 null
+  [PASS] 调休上班的周六(2026-02-28)按工作日执行
+  [PASS] 可关闭调休行为，回退为周末
+  [PASS] 普通周六仍按周末执行
+  [PASS] 普通周一按工作日执行
+  [PASS] nextWindowAt 跳过已开始的时段
+  [PASS] validateWindow(23:00-07:00) 无问题
+  [PASS] validateWindow(23:00-23:00) 报 1 个问题
+  [PASS] validateWindow(23:00-23:10) 提示不短于 30 分钟
+  [PASS] validateWindow(abc-07:00) 报格式问题
+  [PASS] 周六使用周末时段
+  [PASS] 周末时段不跨天
+  [PASS] 周一使用工作日时段
+  [PASS] 工作日时段跨天
+  [PASS] 周六 00:30 回退到周五开启的跨天工作日时段
+  [PASS] 周六 02:00 命中周末自身时段（offset 0 优先于昨天）
+
+── scene · 场景识别（PRD 2.4） ──
+  [PASS] 2026-09-04 周五晚
+  [PASS] 2026-09-05 周六晚
+  [PASS] 2026-09-06 周日晚
+  [PASS] 2026-09-07 周一普通工作日晚
+  [PASS] 2026-10-02（周五）节假日优先级高于星期 → 假期中
+  [PASS] 并带上 holidayToday == 国庆节
+  [PASS] 2026-09-24（周四）假期前夜
+  [PASS] 前夜的 holidayTomorrow == 中秋节
+  [PASS] 前夜 isHolidayEve == true
+  [PASS] 前夜不是假期最后一晚
+  [PASS] 2026-09-27（周日）假期最后一晚
+  [PASS] 最后一晚 isHolidayLastNight == true
+  [PASS] 最后一晚 holidayTomorrow 为 null
+  [PASS] 2026-02-14（春节调休周六）仍优先识别为假期前夜
+  [PASS] 2026-09-20（国庆调休周日）识别为调休上班日晚
+  [PASS] 2026-10-10（国庆调休周六）识别为调休上班日晚
+  [PASS] 2026-05-09（劳动节调休周六）识别为调休上班日晚
+  [PASS] 2026-09-05 01:00 时间分区 = 深夜
+  [PASS] 2026-09-05 04:00 时间分区 = 后半夜
+  [PASS] 2026-09-05 06:00 时间分区 = 天将亮
+  [PASS] 2026-09-05 23:00 时间分区 = 刚躺下
+  [PASS] describeScene 输出包含日期与场景标签
+  [PASS] describeScene 不泄露任何用户数据
+
+── copy · 文案库与轮播（PRD 2.2.2 / 2.4） ──
+  [PASS] 至少 5 条危害科普绑定了可核查来源
+  [PASS] 每条危害科普的 source 都能在来源表中找到
+  [PASS] 文案库没有重复 id
+  [PASS] 同一天同一场景的播放顺序稳定（刷新不跳变）
+  [PASS] 不同日期得到不同的顺序
+  [PASS] 播放列表同时包含 hazard / comfort / scene 三类
+  [PASS] 关闭危害科普后不再出现 hazard
+  [PASS] 轮播当前为 a
+  [PASS] next → b
+  [PASS] next → c
+  [PASS] next 循环回 a
+  [PASS] jumpTo(c)
+  [PASS] jumpTo(不存在) 保持不动
+  [PASS] 空列表必须报错而不是产生 undefined 文案
+  [PASS] createRandom 是确定性的
+  [PASS] hashString("2026-09-04|friday-night") 与 Web 端一致
+  [PASS] mulberry32 随机序列与 Web 端一致（前 5 个值）
+  [PASS] 周五晚播放列表顺序与 Web 端逐位一致（21 条）
+
+── quota · 每周解除额度（PRD 2.1.3） ──
+  [PASS] weekKeyOf(2026-08-31 00:00) 周一是本周起点
+  [PASS] weekKeyOf(2026-08-31 23:59)
+  [PASS] weekKeyOf(2026-09-06 23:59) 周日仍属于本周
+  [PASS] weekKeyOf(2026-09-07 00:00) 下周一进入新的一周
+  [PASS] startOfWeek 的星期必须是周一
+  [PASS] 跨月的自然周：2026-03-01（周日）属于 2026-02-23 那一周
+  [PASS] 跨年的自然周：2027-01-01（周五）属于 2026-12-28 那一周
+  [PASS] 周日晚初始剩余 2 次
+  [PASS] 第一次解除成功
+  [PASS] 第二次解除成功
+  [PASS] 周日末尾额度已用尽
+  [PASS] 用尽后不能再解除
+  [PASS] 周一 00:00 应自动重置为 2 次
+  [PASS] 重置后可以再次解除
+  [PASS] 额度为 1 时第一次成功
+  [PASS] 第二次失败
+  [PASS] 失败时剩余为 0
+  [PASS] 失败时给出明确原因（含「额度」）
+  [PASS] 额度状态跨会话持久化（模拟重开应用）
+  [PASS] 存储损坏时回退到满额度，绝不把用户锁死
+
+── password · 紧急解除密码（PRD 2.2.5） ──
+  [PASS] 正确密码通过
+  [PASS] 错误密码不通过
+  [PASS] 空密码不通过
+  [PASS] 未设置密码时永远不通过（避免空密码解锁）
+  [PASS] 未设置密码时传空串也不通过
+  [PASS] 相同密码得到相同摘要（可持久化）
+  [PASS] 不同密码得到不同摘要
+  [PASS] SHA-256("1234") 与 Web 端一致
+  [PASS] SHA-256("abcd") 与 Web 端一致
+  [PASS] 密码建议（12）返回 2 条
+  [PASS] 密码建议（纯数字）含「混合字母」提示
+  [PASS] 密码建议（abcd1234）为空
+
+── settings · 迁移与容错 ──
+  [PASS] 默认工作日开始时间 23:00
+  [PASS] 默认周末开始时间 23:00
+  [PASS] 默认提前提醒 15 分钟
+  [PASS] 默认白名单总时长 30 分钟
+  [PASS] 设置结构版本
+  [PASS] 亮度上限夹到 1
+  [PASS] 白名单时长上限夹到 60 分钟
+  [PASS] AI 温度下限夹到 0
+  [PASS] AI 超时下限夹到 2000ms
+  [PASS] 提前提醒下限夹到 0
+  [PASS] 系统电话被自动补回
+  [PASS] 系统短信被自动补回
+  [PASS] 用户自定义应用被保留
+  [PASS] 系统电话不可移除
+  [PASS] 系统通话不占用白名单时长
+  [PASS] 直接改数据也无法把系统应用标记为可移除
+  [PASS] 更新后立即生效
+  [PASS] 重置回到默认值
+  [PASS] 订阅者在更新时被通知一次
+  [PASS] 损坏的存储数据不会让应用启动失败
+  [PASS] 序列化 / 反序列化往返保留提醒分钟数
+  [PASS] 往返保留桌面端扩展字段 ProcessName
+  [PASS] 往返保留桌面端扩展节 Desktop.AutoStart
+
+── engine · 状态引擎与紧急解除（PRD 2.2.5） ──
+  [PASS] 周一 23:30 处于 ACTIVE
+  [PASS] 剩余时长指向次日 07:00（7.5 小时）
+  [PASS] 时段结束日为 2026-09-01
+  [PASS] 错误密码返回 bad-password
+  [PASS] 错误密码不消耗额度（先密码后额度）
+  [PASS] 错误密码后仍处于熄灯状态
+  [PASS] 正确密码解除成功
+  [PASS] 解除后剩余额度为 1
+  [PASS] 解除后当日熄灯失效 → OFF
+  [PASS] dismissed == true
+  [PASS] 被解除的时段键为 2026-08-31
+  [PASS] 同一次时段内推进到凌晨 03:00 仍为 OFF
+  [PASS] 次日 23:30 按计划自动恢复 ACTIVE
+  [PASS] 非熄灯状态下不允许解除（不浪费额度）
+  [PASS] 非熄灯状态下额度未变
+  [PASS] 第一次解除成功
+  [PASS] 第二次解除成功
+  [PASS] 额度用尽后无法再解除
+  [PASS] 额度用尽后必须继续熄灯
+  [PASS] 未设置密码时返回 no-password
+  [PASS] 默认使用本地轮播文案
+  [PASS] AI 文案优先于本地轮播
+  [PASS] AI 文案内容正确
+  [PASS] 清空后恢复本地轮播
+  [PASS] 40 次轮播推进覆盖多条文案且始终非空
+
+── guard · 防绕过守卫（PRD 三 / 2.2.5） ──
+  [PASS] 正常流逝不触发时间跳变
+  [PASS] 系统时间被向前拨动 2 小时能被检出
+  [PASS] 跳变方向为 forward
+  [PASS] 漂移量大于 7000 秒
+  [PASS] 回调恰好触发一次
+  [PASS] 系统时间被向后拨动同样能被检出
+  [PASS] 第 1 次点击 progress == 1
+  [PASS] 第 2 次点击 progress == 2
+  [PASS] 第 3 次点击 progress == 3
+  [PASS] 第 4 次点击 progress == 4
+  [PASS] 停顿超过时间窗后重新计数
+  [PASS] 第 5 次连击触发紧急解除入口
+  [PASS] 触发回调恰好一次
+  [PASS] 触发后计数清零
+
+── platform · 用户目录 / 前台进程监听 / 开机自启 ──
+  [PASS] 用户数据目录已解析
+  [PASS] Windows 用户目录以 xideng 结尾
+  [PASS] Windows 用户目录位于 %APPDATA%\xideng
+  [PASS] 前台进程监听器已创建（WindowsProcessWatcher）
+  [PASS] Windows 上 IsSupported 应为 true
+  [PASS] 能力说明如实标注：Windows：已实现（GetForegroundWindow + GetWindowThreadProcessId 轮询）
+  [PASS] 能读取当前前台窗口（无窗口时允许为 null）
+  [PASS] 开机自启在本平台受支持
+  [PASS] 开机自启命令行为可执行路径且已加引号："C:\Program Files\dotnet\dotnet.exe"
+  [PASS] 注册表读写往返成功（临时键，已清理）
+  [PASS] HKCU Run 注册表项可访问（仅读取，未修改自启动状态）
+  [PASS] 自启动项当前状态可查询
+
+── unverified · 本机无法验证的能力（如实标注，不计入通过/失败） ──
+  [待验证] macOS LaunchAgent（~/Library/LaunchAgents/com.xideng.desktop.plist）：代码已实现，本机无 macOS 环境，未验证。
+  [待验证] macOS 用户目录（~/Library/Application Support/xideng）：代码已实现（对 SpecialFolder.ApplicationData 做了 macOS 分支），未验证。
+  [待验证] macOS 前台进程监听：待实现（需 NSWorkspace.frontmostApplication）。
+  [待验证] Linux 前台进程监听：待实现（需 X11 EWMH 或 AT-SPI，依赖桌面环境）。
+  [待验证] 多显示器全屏置顶熄灯窗口（每屏一个 Window，Topmost = true）：依赖真实图形会话，无法在无头 / 控制台自检中验证。
+  [待验证] 禁止关闭（拦截 Closing 并取消）：依赖真实窗口消息循环，无法在自检中验证。
+  [待验证] Windows 上 GetForegroundWindow 的实际置顶效果：自检只能验证能读到前台进程，无法验证窗口 Z 序。
+  [待验证] Avalonia 12 与 11 的差异：本工程按规格使用 Avalonia 11.3.0；本机 NuGet 缓存中另有 12.1.4。
+
+────────────────────────────────────────
+自检通过：259 项断言全部通过，0 项失败。
+结论：PASS
+（另有 8 项本机无法验证的能力已如实标注，不计入成败。）
+────────────────────────────────────────

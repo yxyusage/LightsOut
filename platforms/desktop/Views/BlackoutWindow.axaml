@@ -1,0 +1,108 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Xideng.Desktop.Views.BlackoutWindow"
+        Title="熄灯早睡"
+        Background="Black"
+        SystemDecorations="None"
+        CanResize="False"
+        ShowInTaskbar="False"
+        Topmost="True"
+        WindowStartupLocation="Manual">
+  <Grid x:Name="Root">
+
+    <!-- 渐暗层：入场时由深灰渐隐到纯黑（PRD 4.3「屏幕同步渐暗至全黑」） -->
+    <Border x:Name="DimLayer" Background="#1C1C1C" />
+
+    <!-- 入场 / 退场动画：垂下的灯绳与灯泡 -->
+    <Grid x:Name="LampLayer"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          RowDefinitions="Auto,Auto">
+      <Rectangle x:Name="Cord" Grid.Row="0" Width="2" Height="170" Fill="#4A4A4A" HorizontalAlignment="Center" />
+      <Ellipse x:Name="Bulb" Grid.Row="1" Width="98" Height="98" Fill="#FFF3C4" HorizontalAlignment="Center" />
+    </Grid>
+
+    <!-- 黑屏主界面（PRD 2.2.2） -->
+    <Grid x:Name="MainContent" Opacity="0" RowDefinitions="*,Auto">
+      <StackPanel Grid.Row="0" Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <TextBlock x:Name="SceneTag" HorizontalAlignment="Center" FontSize="13" Foreground="#6E6E6E" />
+        <TextBlock x:Name="ClockText" HorizontalAlignment="Center" FontSize="76" FontWeight="Light" Foreground="#E8E8E8" />
+        <TextBlock x:Name="RemainingText" HorizontalAlignment="Center" FontSize="17" Foreground="#9A9A9A" />
+        <TextBlock x:Name="CopyText"
+                   HorizontalAlignment="Center"
+                   FontSize="20"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   MaxWidth="640"
+                   MinHeight="70"
+                   Margin="0,30,0,0"
+                   Foreground="#C8C8C8" />
+        <TextBlock x:Name="QuotaText" HorizontalAlignment="Center" FontSize="13" Foreground="#6E6E6E" Margin="0,8,0,0" />
+      </StackPanel>
+
+      <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="14" HorizontalAlignment="Center" Margin="0,0,0,44">
+        <Button x:Name="WhitelistButton" Content="白名单应用" Padding="20,10" />
+        <Button x:Name="AudioButton" Content="助眠音乐" Padding="20,10" />
+        <Button x:Name="SettingsButton" Content="设置" Padding="20,10" />
+      </StackPanel>
+    </Grid>
+
+    <!-- 白名单面板（PRD 2.2.3） -->
+    <Border x:Name="WhitelistPanel"
+            IsVisible="False"
+            Background="#0F0F0F"
+            BorderBrush="#2A2A2A"
+            BorderThickness="1"
+            CornerRadius="12"
+            Padding="22"
+            MaxWidth="600"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+      <StackPanel Spacing="12">
+        <TextBlock Text="白名单应用" FontSize="20" Foreground="#DDDDDD" />
+        <TextBlock x:Name="WhitelistSummary" FontSize="13" Foreground="#8A8A8A" TextWrapping="Wrap" MaxWidth="540" />
+        <ScrollViewer MaxHeight="240">
+          <StackPanel x:Name="WhitelistList" Spacing="6" />
+        </ScrollViewer>
+        <Button x:Name="WhitelistCloseButton" Content="关闭" HorizontalAlignment="Right" Padding="18,8" />
+      </StackPanel>
+    </Border>
+
+    <!-- 紧急解除面板（PRD 2.2.5） -->
+    <Border x:Name="EmergencyPanel"
+            IsVisible="False"
+            Background="#0F0F0F"
+            BorderBrush="#2A2A2A"
+            BorderThickness="1"
+            CornerRadius="12"
+            Padding="22"
+            MaxWidth="440"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+      <StackPanel Spacing="12">
+        <TextBlock Text="紧急解除" FontSize="20" Foreground="#DDDDDD" />
+        <TextBlock x:Name="EmergencyHint" FontSize="13" Foreground="#8A8A8A" TextWrapping="Wrap" MaxWidth="380" />
+        <TextBox x:Name="PasswordBox" PasswordChar="*" Watermark="输入紧急解除密码" />
+        <TextBlock x:Name="EmergencyMessage" FontSize="13" Foreground="#C97A7A" TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+          <Button x:Name="EmergencyCancelButton" Content="取消" Padding="18,8" />
+          <Button x:Name="EmergencyConfirmButton" Content="解除熄灯" Padding="18,8" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- 提示条 -->
+    <Border x:Name="NoticeBar"
+            IsVisible="False"
+            Background="#1A1A1A"
+            BorderBrush="#333333"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="14,10"
+            Margin="0,28,0,0"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top">
+      <TextBlock x:Name="NoticeText" FontSize="13" Foreground="#D8D8D8" TextWrapping="Wrap" MaxWidth="640" />
+    </Border>
+  </Grid>
+</Window>

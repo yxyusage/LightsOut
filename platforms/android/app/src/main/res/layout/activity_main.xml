@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/xideng_surface"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="28dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="32dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-light"
+            android:text="熄灯早睡"
+            android:textColor="@color/xideng_text_primary"
+            android:textSize="26sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="到点熄灯，把手机交还给睡眠"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/phaseText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:background="@color/xideng_surface_alt"
+            android:fontFamily="sans-serif-light"
+            android:paddingStart="16dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="14dp"
+            android:text="——"
+            android:textColor="@color/xideng_text_primary"
+            android:textSize="17sp" />
+
+        <TextView
+            android:id="@+id/detailText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="@color/xideng_text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/quotaText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/xideng_text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
+            style="@style/XidengSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="运行所需权限" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            android:text="PRD 三、防绕过安全防护体系依赖下列权限。缺任何一项都能继续用，但接管能力会相应减弱。"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:id="@+id/permissionContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            style="@style/XidengSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="操作" />
+
+        <Button
+            android:id="@+id/btnSettings"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="睡眠计划与偏好设置" />
+
+        <Button
+            android:id="@+id/btnPreviewWarning"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="预览「提前预告」弹窗" />
+
+        <Button
+            android:id="@+id/btnDemoBlackout"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="演示熄灯界面（2 分钟后自动结束）" />
+
+        <Button
+            android:id="@+id/btnEmergency"
+            style="@style/XidengButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="紧急解除" />
+
+        <TextView
+            android:id="@+id/footerText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="26dp"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp" />
+    </LinearLayout>
+</ScrollView>

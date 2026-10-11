@@ -1,0 +1,38 @@
+# ---- 构建产物 ----
+dist/
+build/
+out/
+*.apk
+*.aab
+*.ap_
+*.dex
+platforms/android/app/release/
+platforms/android/.gradle/
+platforms/android/local.properties
+
+# ---- .NET ----
+bin/
+obj/
+*.user
+.vs/
+
+# ---- Node（本项目无运行时依赖，仅测试/脚本）----
+node_modules/
+npm-debug.log*
+
+# ---- 本地草稿与临时文件 ----
+.scratch/
+tmp/
+*.tmp
+*.log
+
+# ---- 编辑器 / 系统 ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# ---- 产物校验 ----
+checks.json
+preview-*/

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/blackoutRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/xideng_black"
+    android:keepScreenOn="true">
+
+    <!-- 原生兜底布局（PRD 2.2.2）。WebView 不可用或未启用时使用这一份。 -->
+    <LinearLayout
+        android:id="@+id/nativeContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="28dp"
+        android:paddingTop="88dp"
+        android:paddingEnd="28dp"
+        android:paddingBottom="56dp">
+
+        <TextView
+            android:id="@+id/clockText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-light"
+            android:text="--:--"
+            android:textColor="@color/xideng_text_primary"
+            android:textSize="60sp" />
+
+        <TextView
+            android:id="@+id/remainingText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="距离本次熄灯结束 --"
+            android:textColor="@color/xideng_text_secondary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/sceneText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="12sp" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/copyText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-light"
+            android:gravity="center"
+            android:lineSpacingExtra="8dp"
+            android:maxWidth="360dp"
+            android:textColor="@color/xideng_text_primary"
+            android:textSize="17sp" />
+
+        <TextView
+            android:id="@+id/copySourceText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnWhitelist"
+                style="@style/XidengButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="白名单应用" />
+
+            <Button
+                android:id="@+id/btnAudio"
+                style="@style/XidengButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:text="助眠音乐" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/audioStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/whitelistStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:textColor="@color/xideng_text_faint"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!--
+      WebView 渲染路径：加载 app/src/main/assets/web/blackout.html。
+      视觉与 Web/PWA 版完全一致；资产缺失或加载失败时自动退回上面的原生布局。
+      资产同步方式见 README「WebView 资产同步」一节。
+    -->
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/xideng_black"
+        android:visibility="gone" />
+
+    <!-- 入场 / 退场动画层（PRD 4.3：拉灯绳，约 1.5 秒） -->
+    <FrameLayout
+        android:id="@+id/lampLayer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="120dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <View
+                android:id="@+id/lampBulb"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/bg_lamp_bulb" />
+
+            <View
+                android:layout_width="2dp"
+                android:layout_height="10dp"
+                android:background="@drawable/bg_lamp_cord" />
+
+            <View
+                android:id="@+id/lampHandle"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:background="@drawable/bg_lamp_handle" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- 动画期间的渐暗/渐亮遮罩 -->
+    <View
+        android:id="@+id/fadeOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/xideng_black"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone" />
+</FrameLayout>

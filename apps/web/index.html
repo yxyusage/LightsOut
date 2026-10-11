@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>熄灯早睡 · 到点熄灯，把手机交还给睡眠</title>
+<meta name="description" content="到点全屏接管设备的强制型睡眠辅助工具。设定熄灯时段，时间一到自动进入黑屏界面，屏蔽娱乐应用、播放助眠音频、用 AI 生成睡前文案陪伴你入睡。" />
+<meta name="theme-color" content="#000000" />
+<meta name="color-scheme" content="dark" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="熄灯早睡" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" href="./assets/icon-192.png" />
+<link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+<link rel="stylesheet" href="./styles/app.css" />
+</head>
+<body>
+
+<!-- ══════════ SVG 图标精灵 ══════════ -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-bulb" viewBox="0 0 24 24">
+    <path d="M12 3v2M9 6.5a5 5 0 1 0 6 0M9.5 18h5M10.5 21h3" />
+    <path d="M9 6.5A5 5 0 0 1 15 6.5" />
+    <circle cx="12" cy="11.5" r="3.2" />
+  </symbol>
+  <symbol id="i-apps" viewBox="0 0 24 24">
+    <rect x="3.5" y="3.5" width="7" height="7" rx="1.6" />
+    <rect x="13.5" y="3.5" width="7" height="7" rx="1.6" />
+    <rect x="3.5" y="13.5" width="7" height="7" rx="1.6" />
+    <rect x="13.5" y="13.5" width="7" height="7" rx="1.6" />
+  </symbol>
+  <symbol id="i-audio" viewBox="0 0 24 24">
+    <path d="M4 14.5c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+    <path d="M4 14.5v2.2M20 14.5v2.2" />
+    <rect x="2.5" y="14" width="3.6" height="6" rx="1.8" />
+    <rect x="17.9" y="14" width="3.6" height="6" rx="1.8" />
+  </symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24">
+    <path d="M12 3l7 2.6v5.6c0 4.2-2.9 8-7 9.2-4.1-1.2-7-5-7-9.2V5.6z" />
+    <path d="M9 12l2.2 2.2L15.4 10" />
+  </symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24">
+    <path d="M12 3.5l1.7 4.3 4.3 1.7-4.3 1.7L12 15.5l-1.7-4.3L6 9.5l4.3-1.7z" />
+    <path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" />
+  </symbol>
+  <symbol id="i-user" viewBox="0 0 24 24">
+    <circle cx="12" cy="8.5" r="3.6" />
+    <path d="M4.8 20c0-3.6 3.2-6 7.2-6s7.2 2.4 7.2 6" />
+  </symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5l11 6.5-11 6.5z" /></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2" /></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></symbol>
+  <symbol id="i-source" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 10.8v5.4M12 7.8v.1" />
+  </symbol>
+</svg>
+
+<!-- ══════════ 拉灯绳动画层（PRD 4.3）══════════ -->
+<div class="lamp" id="lamp" hidden>
+  <div class="lamp__veil"></div>
+  <svg class="lamp__svg" viewBox="0 0 200 360" aria-hidden="true">
+    <defs>
+      <radialGradient id="lampGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ffd7a0" stop-opacity="0.55" />
+        <stop offset="45%" stop-color="#ffbe6a" stop-opacity="0.18" />
+        <stop offset="100%" stop-color="#ffbe6a" stop-opacity="0" />
+      </radialGradient>
+    </defs>
+    <circle class="lamp__glow" cx="100" cy="228" r="120" fill="url(#lampGlow)" />
+    <g class="lamp__assembly">
+      <line class="lamp__cord" x1="100" y1="-400" x2="100" y2="152" />
+      <circle class="lamp__ring" cx="100" cy="163" r="8" />
+      <rect class="lamp__base" x="86" y="182" width="28" height="20" rx="5" />
+      <circle class="lamp__bulb" cx="100" cy="228" r="34" />
+    </g>
+  </svg>
+</div>
+
+<!-- ══════════ 1. 首次使用引导 ══════════ -->
+<section class="screen screen--scroll" id="screen-onboarding" hidden>
+  <div class="onboard">
+    <header class="onboard__head">
+      <svg class="onboard__mark"><use href="#i-bulb" /></svg>
+      <h1>熄灯早睡</h1>
+      <p>到点熄灯，把手机交还给睡眠</p>
+    </header>
+
+    <!-- 步骤 1 -->
+    <div class="onboard__step" data-step="1">
+      <h2>它会怎么帮你</h2>
+      <ul class="feature-list">
+        <li><strong>到点自动接管</strong><span>设定的时间一到，自动进入全屏熄灯界面</span></li>
+        <li><strong>提前预告</strong><span>熄灯前 15 分钟弹出倒计时，给你收尾的时间</span></li>
+        <li><strong>助眠音频</strong><span>五类实时合成的白噪音，熄屏也能继续播放</span></li>
+        <li><strong>AI 睡前文案</strong><span>识别周五晚、假期前夜，说一句当下合适的话</span></li>
+      </ul>
+
+      <div class="notice notice--warn">
+        <h3>先说清楚它的能力边界</h3>
+        <p>
+          这是运行在浏览器里的 <strong>Web / PWA 版本</strong>。它能保证<strong>熄灯状态本身甩不掉</strong>：
+          改系统时间、切走、刷新、按返回键都会立刻被拉回熄灯界面。
+        </p>
+        <p>
+          但浏览器没有权限<strong>真正阻止你打开微信或抖音</strong>。要做到系统级接管（禁止强制停止、
+          防卸载、拦截桌面），需要安装原生版本，代码在仓库的 <code>platforms/android</code> 目录。
+        </p>
+        <p class="notice__foot">我们不会把"专注接管"说成"系统封锁"。</p>
+      </div>
+
+      <button type="button" class="btn btn--primary btn--block" data-next="2">知道了，继续</button>
+    </div>
+
+    <!-- 步骤 2 -->
+    <div class="onboard__step" data-step="2" hidden>
+      <h2>设置你的睡眠时段</h2>
+      <p class="hint">结束时间早于开始时间会自动按"跨天"处理，例如 23:00 → 次日 07:00。</p>
+      <div class="field-group" id="onboard-windows"></div>
+      <div class="field">
+        <label>提前多久提醒我</label>
+        <div class="chips" id="onboard-warn"></div>
+      </div>
+      <div class="onboard__nav">
+        <button type="button" class="btn" data-next="1">上一步</button>
+        <button type="button" class="btn btn--primary" data-next="3">下一步</button>
+      </div>
+    </div>
+
+    <!-- 步骤 3 -->
+    <div class="onboard__step" data-step="3" hidden>
+      <h2>设置紧急解除密码</h2>
+      <p class="hint">
+        熄灯后连续点击屏幕 5 次可唤出解除入口。它是<strong>防冲动的一次减速带</strong>，
+        不是安全机制——密码只存在你自己这台设备上。
+      </p>
+      <div class="field">
+        <label for="onboard-password">密码</label>
+        <input type="password" id="onboard-password" inputmode="numeric" autocomplete="new-password" placeholder="至少 4 位" />
+        <p class="hint hint--error" id="onboard-password-error" hidden></p>
+      </div>
+      <p class="hint">
+        每周有 <strong>2 次</strong>解除额度，每周一 0 点自动重置。
+      </p>
+      <div class="onboard__nav">
+        <button type="button" class="btn" data-next="2">上一步</button>
+        <button type="button" class="btn btn--primary" id="onboard-finish">开始使用</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 2. 主页 ══════════ -->
+<section class="screen screen--scroll" id="screen-home" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand__mark"><use href="#i-bulb" /></svg>
+      <div>
+        <h1>熄灯早睡</h1>
+        <p id="brand-sub">到点熄灯，把手机交还给睡眠</p>
+      </div>
+    </div>
+    <button type="button" class="icon-btn" id="btn-profile" aria-label="个人中心">
+      <svg><use href="#i-user" /></svg>
+    </button>
+  </header>
+
+  <main class="stack">
+    <!-- 状态卡 -->
+    <section class="card card--status" id="status-card">
+      <div class="status__head">
+        <span class="status__dot" id="status-dot"></span>
+        <span class="status__label" id="status-label">—</span>
+      </div>
+      <p class="status__detail" id="status-detail">—</p>
+      <p class="status__next" id="status-next"></p>
+      <div class="row">
+        <button type="button" class="btn" id="btn-toggle-plan">关闭计划</button>
+        <button type="button" class="btn btn--primary" id="btn-demo">立即体验熄灯模式</button>
+      </div>
+    </section>
+
+    <!-- 睡眠时段 -->
+    <section class="card">
+      <h2><svg class="card__icon"><use href="#i-bulb" /></svg>睡眠时段</h2>
+      <div class="field-group" id="home-windows"></div>
+      <div class="field">
+        <label>提前提醒</label>
+        <div class="chips" id="home-warn"></div>
+      </div>
+      <p class="field-error" id="window-error" hidden></p>
+      <p class="hint" id="window-summary"></p>
+    </section>
+
+    <!-- 白名单 -->
+    <section class="card">
+      <h2><svg class="card__icon"><use href="#i-apps" /></svg>白名单应用</h2>
+      <p class="hint" id="whitelist-summary">—</p>
+      <button type="button" class="btn btn--block" id="btn-manage-whitelist">管理白名单</button>
+    </section>
+
+    <!-- 助眠音频 -->
+    <section class="card">
+      <h2><svg class="card__icon"><use href="#i-audio" /></svg>助眠音频</h2>
+      <div class="chips" id="home-audio-presets"></div>
+      <div class="field">
+        <label>播放时长</label>
+        <div class="chips" id="home-audio-durations"></div>
+      </div>
+    </section>
+
+    <!-- AI -->
+    <section class="card">
+      <h2><svg class="card__icon"><use href="#i-sparkles" /></svg>AI 场景化文案</h2>
+      <p class="hint" id="ai-summary">—</p>
+      <div class="row">
+        <button type="button" class="btn" id="btn-ai-config">配置</button>
+        <button type="button" class="btn btn--ghost" id="btn-sources">数据溯源</button>
+      </div>
+    </section>
+
+    <!-- 诚实的能力说明 -->
+    <section class="card card--note">
+      <h2><svg class="card__icon"><use href="#i-shield" /></svg>防护能力说明</h2>
+      <ul class="plain-list">
+        <li><span class="tag tag--on">已实现</span>系统时间篡改检测：改时间会被立即拉回熄灯界面</li>
+        <li><span class="tag tag--on">已实现</span>后台切换拦截：切走再回来立刻重新接管</li>
+        <li><span class="tag tag--on">已实现</span>刷新与返回键拦截：熄灯状态不会因为刷新而消失</li>
+        <li><span class="tag tag--on">已实现</span>离线可用：断网也能进入熄灯界面</li>
+        <li><span class="tag tag--off">需原生版</span>阻止打开其它 App、防卸载、防强制停止</li>
+      </ul>
+    </section>
+
+    <footer class="page-foot">
+      <p>熄灯早睡 v1.0.0 · MIT License · 所有数据仅保存在本机</p>
+    </footer>
+  </main>
+</section>
+
+<!-- ══════════ 3. 个人中心 ══════════ -->
+<section class="screen screen--scroll" id="screen-profile" hidden>
+  <header class="topbar">
+    <button type="button" class="icon-btn" id="btn-profile-back" aria-label="返回">
+      <svg><use href="#i-back" /></svg>
+    </button>
+    <h1 class="topbar__title">个人中心</h1>
+    <span class="topbar__spacer"></span>
+  </header>
+
+  <main class="stack">
+    <section class="card card--quota">
+      <h2>本周解除额度</h2>
+      <div class="quota" id="quota-display"></div>
+      <p class="hint" id="quota-hint">—</p>
+    </section>
+
+    <section class="card">
+      <h2>白名单今日用量</h2>
+      <div class="meter"><div class="meter__fill" id="budget-fill"></div></div>
+      <p class="hint" id="budget-hint">—</p>
+    </section>
+
+    <section class="card">
+      <h2>紧急解除密码</h2>
+      <div class="field">
+        <label for="profile-password">新密码</label>
+        <input type="password" id="profile-password" inputmode="numeric" autocomplete="new-password" placeholder="至少 4 位" />
+      </div>
+      <button type="button" class="btn btn--block" id="btn-save-password">保存密码</button>
+      <p class="hint" id="password-hint"></p>
+    </section>
+
+    <section class="card">
+      <h2>数据与隐私</h2>
+      <p class="hint">
+        所有设置、密码摘要、熄灯记录都只写入本机 localStorage，不发送到任何服务器。
+        配置 AI 后，只有你填写的接口地址会收到请求，请求内容不包含任何个人数据。
+      </p>
+      <button type="button" class="btn btn--danger btn--block" id="btn-reset-all">清除全部本地数据</button>
+    </section>
+
+    <footer class="page-foot"><p>熄灯早睡 v1.0.0</p></footer>
+  </main>
+</section>
+
+<!-- ══════════ 4. 预告弹窗（不可关闭，PRD 2.1.2）══════════ -->
+<section class="warning" id="screen-warning" hidden>
+  <div class="warning__inner">
+    <p class="warning__eyebrow">即将进入熄灯模式</p>
+    <div class="warning__countdown" id="warning-countdown">--:--</div>
+    <p class="warning__detail" id="warning-detail">—</p>
+    <p class="warning__foot">这个提示无法关闭。倒计时结束后会自动进入熄灯界面。</p>
+  </div>
+</section>
+
+<!-- ══════════ 5. 熄灯黑屏界面（PRD 2.2.2）══════════ -->
+<section class="blackout" id="screen-blackout" hidden>
+  <div class="blackout__demo" id="blackout-demo" hidden>
+    <span>演示模式</span>
+    <button type="button" class="link" id="btn-exit-demo">退出演示</button>
+  </div>
+
+  <div class="blackout__info">
+    <time class="blackout__clock" id="blackout-clock">--:--</time>
+    <p class="blackout__remaining"><span id="blackout-remaining-prefix">距离本次熄灯结束还有</span> <strong id="blackout-remaining">--</strong></p>
+    <p class="blackout__scene" id="blackout-scene"></p>
+  </div>
+
+  <figure class="blackout__copy">
+    <blockquote id="blackout-copy-text">—</blockquote>
+    <figcaption>
+      <button type="button" class="link" id="blackout-source" hidden>
+        <svg><use href="#i-source" /></svg><span id="blackout-source-label">数据来源</span>
+      </button>
+    </figcaption>
+  </figure>
+
+  <nav class="blackout__actions">
+    <button type="button" class="action" id="btn-open-whitelist">
+      <svg class="action__icon"><use href="#i-apps" /></svg>
+      <span>白名单应用</span>
+      <em id="whitelist-badge"></em>
+    </button>
+    <button type="button" class="action" id="btn-open-audio">
+      <svg class="action__icon"><use href="#i-audio" /></svg>
+      <span>助眠音乐</span>
+    </button>
+  </nav>
+
+  <div class="tap-hint" id="tap-hint" hidden><span id="tap-hint-text"></span></div>
+</section>
+
+<!-- ══════════ 浮层 ══════════ -->
+<div class="sheet" id="sheet-audio" hidden>
+  <div class="sheet__backdrop" data-close></div>
+  <div class="sheet__panel">
+    <header class="sheet__head">
+      <h2>助眠音频</h2>
+      <button type="button" class="icon-btn" data-close aria-label="关闭"><svg><use href="#i-close" /></svg></button>
+    </header>
+    <div class="sheet__body">
+      <div class="audio-presets" id="audio-presets"></div>
+      <div class="field">
+        <label>播放时长</label>
+        <div class="chips" id="audio-durations"></div>
+      </div>
+      <div class="field">
+        <label>音量 <span id="audio-volume-label">60%</span></label>
+        <input type="range" id="audio-volume" min="0" max="100" step="1" value="60" />
+      </div>
+      <button type="button" class="btn btn--primary btn--block" id="btn-audio-toggle">开始播放</button>
+      <p class="hint" id="audio-status"></p>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-whitelist" hidden>
+  <div class="sheet__backdrop" data-close></div>
+  <div class="sheet__panel">
+    <header class="sheet__head">
+      <h2>白名单应用</h2>
+      <button type="button" class="icon-btn" data-close aria-label="关闭"><svg><use href="#i-close" /></svg></button>
+    </header>
+    <div class="sheet__body">
+      <p class="hint">
+        所有白名单应用共用一份可用时长。系统电话与短信不受限制，也不占用额度。
+      </p>
+      <div class="field">
+        <label>总可用时长 <span id="whitelist-total-label">30 分钟</span></label>
+        <input type="range" id="whitelist-total" min="5" max="60" step="5" value="30" />
+      </div>
+      <div class="meter"><div class="meter__fill" id="whitelist-meter"></div></div>
+      <p class="hint" id="whitelist-remaining"></p>
+      <ul class="app-list" id="whitelist-apps"></ul>
+      <form class="add-app" id="add-app-form">
+        <input type="text" id="add-app-name" placeholder="应用名称，例如 微信" maxlength="20" />
+        <input type="url" id="add-app-url" placeholder="打开地址（选填，例如 https://…）" />
+        <button type="submit" class="btn btn--primary"><svg><use href="#i-plus" /></svg>添加</button>
+      </form>
+      <p class="hint hint--error" id="add-app-error" hidden></p>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-emergency" hidden>
+  <div class="sheet__backdrop" data-close></div>
+  <div class="sheet__panel">
+    <header class="sheet__head">
+      <h2>紧急解除</h2>
+      <button type="button" class="icon-btn" data-close aria-label="关闭"><svg><use href="#i-close" /></svg></button>
+    </header>
+    <div class="sheet__body">
+      <p class="hint" id="emergency-quota-hint">—</p>
+      <form id="emergency-form">
+        <div class="field">
+          <label for="emergency-password">输入密码</label>
+          <input type="password" id="emergency-password" inputmode="numeric" autocomplete="off" placeholder="紧急解除密码" />
+        </div>
+        <p class="hint hint--error" id="emergency-error" hidden></p>
+        <button type="submit" class="btn btn--danger btn--block" id="btn-emergency-submit">解除熄灯</button>
+      </form>
+      <p class="hint">
+        解除后本次熄灯立即失效，消耗 1 次本周额度。今天是<strong>无法</strong>恢复的，
+        下一次熄灯会按计划自动生效。
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-ai" hidden>
+  <div class="sheet__backdrop" data-close></div>
+  <div class="sheet__panel">
+    <header class="sheet__head">
+      <h2>AI 场景化文案</h2>
+      <button type="button" class="icon-btn" data-close aria-label="关闭"><svg><use href="#i-close" /></svg></button>
+    </header>
+    <div class="sheet__body">
+      <label class="switch">
+        <input type="checkbox" id="ai-enabled" />
+        <span>启用 AI 生成睡前文案</span>
+      </label>
+      <p class="hint">
+        关闭时使用内置文案库，功能完全不受影响。启用后需要填写你自己的大模型接口。
+      </p>
+      <div class="field">
+        <label for="ai-baseurl">接口地址（OpenAI 兼容）</label>
+        <input type="url" id="ai-baseurl" placeholder="https://api.openai.com/v1" />
+      </div>
+      <div class="field">
+        <label for="ai-model">模型名称</label>
+        <input type="text" id="ai-model" placeholder="gpt-4o-mini" />
+      </div>
+      <div class="field">
+        <label for="ai-apikey">API Key</label>
+        <input type="password" id="ai-apikey" placeholder="sk-..." autocomplete="off" />
+      </div>
+      <p class="hint">
+        Key 只保存在你这台设备的 localStorage，请求直接发往你填写的接口地址，不经过任何中转。
+        请勿在公共设备上填写。
+      </p>
+      <div class="row">
+        <button type="button" class="btn btn--primary" id="btn-ai-save">保存</button>
+        <button type="button" class="btn" id="btn-ai-test">测试连接</button>
+      </div>
+      <p class="hint" id="ai-status"></p>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-sources" hidden>
+  <div class="sheet__backdrop" data-close></div>
+  <div class="sheet__panel">
+    <header class="sheet__head">
+      <h2>数据溯源</h2>
+      <button type="button" class="icon-btn" data-close aria-label="关闭"><svg><use href="#i-close" /></svg></button>
+    </header>
+    <div class="sheet__body">
+      <p class="hint">
+        熄灯界面上出现的每一条危害科普都绑定了原始文献。我们只收录能在论文或官方通报中查到的结论，
+        不写未经证实的数字。
+      </p>
+      <dl class="source-list" id="source-list"></dl>
+      <h3 class="source-heading">节假日数据</h3>
+      <p class="hint" id="holiday-source"></p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="./src/app.js"></script>
+</body>
+</html>

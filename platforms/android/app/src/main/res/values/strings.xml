@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">熄灯早睡</string>
+    <string name="settings_title">设置</string>
+
+    <string name="accessibility_service_label">熄灯早睡 · 应用监听</string>
+    <string name="accessibility_service_description">熄灯时段内检测到切换到非白名单应用时，立即把你送回熄灯界面。本服务只读取前台应用的包名，不读取屏幕内容，也不联网。</string>
+
+    <string name="channel_lock_name">熄灯计划</string>
+    <string name="channel_lock_description">熄灯计划的常驻状态，用于防止系统在夜间清理本应用。</string>
+    <string name="channel_audio_name">助眠音频</string>
+    <string name="channel_audio_description">白噪音播放期间的常驻通知。</string>
+    <string name="channel_alert_name">熄灯提醒</string>
+    <string name="channel_alert_description">进入熄灯模式前的提前预告。</string>
+</resources>

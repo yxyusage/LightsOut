@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      熄灯早睡 · Android 权限清单
+      对应 PRD 五、5.1「Android 端权限需求」。
+      每一项都在 README 的对照表里说明了用途；没有用到的一律不申请。
+    -->
+
+    <!-- 白名单需要列出可启动的应用（PRD 2.2.3）。用 <queries> 而不是 QUERY_ALL_PACKAGES，
+         避免申请一个过宽的敏感权限。 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="sms" />
+        </intent>
+    </queries>
+
+    <!-- 前台服务保活（PRD 三） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- 助眠音频后台播放（PRD 2.3） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!-- 常驻通知栏（PRD 2.2.3 / 三）。Android 13+ 需运行时授权 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- 开机自启动 + 重启后自动恢复（PRD 2.2.1 / 三） -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- 悬浮窗权限（PRD 5.1）：在有该权限时，前台服务才能在后台合法地拉起熄灯界面 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- 到点精确触发（PRD 2.2.1）。未授权时自动降级为非精确闹钟 -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- 预告弹窗需要在锁屏上全屏显示（PRD 2.1.2） -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!-- 熄灯界面常亮（PRD 2.2.2） -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- 紧急解除等交互的触感反馈 -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- 识别来电、放行通话（PRD 2.2.4 / 5.1）。未授权时退回 AudioManager 判定，功能不受影响 -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!-- 引导用户把本应用加入电池优化白名单，避免前台服务在夜间被冻结（PRD 三） -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- AI 场景化文案（PRD 2.4）。Key 只存在本机，请求直连用户自己填写的 baseUrl -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:name=".XidengApp"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Xideng"
+        tools:targetApi="34">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          黑屏主界面（PRD 2.2.2）。
+          · showWhenLocked / turnScreenOn 让界面能盖在锁屏之上并点亮屏幕；
+          · taskAffinity="" + excludeFromRecents 让它在最近任务里不出现，减少"划掉"这条脱身路径；
+          · launchMode=singleInstance 保证全程只有一个实例。
+        -->
+        <activity
+            android:name=".ui.BlackoutActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Xideng.Blackout"
+            android:turnScreenOn="true" />
+
+        <!-- 提前预告弹窗（PRD 2.1.2），半透明、不可关闭 -->
+        <activity
+            android:name=".ui.WarningActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Xideng.Warning"
+            android:turnScreenOn="true" />
+
+        <!-- 紧急解除（PRD 2.2.5） -->
+        <activity
+            android:name=".ui.EmergencyActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:showWhenLocked="true"
+            android:theme="@style/Theme.Xideng.Dialog"
+            android:turnScreenOn="true" />
+
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="false"
+            android:label="@string/settings_title"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <!-- 前台服务保活（PRD 三）。Android 14 要求声明 foregroundServiceType。 -->
+        <service
+            android:name=".service.LockForegroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="sleep_lock_scheduler: 在用户设定的熄灯时段内维持熄灯接管与到点调度" />
+        </service>
+
+        <!-- 助眠音频（PRD 2.3） -->
+        <service
+            android:name=".service.AudioService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!--
+          无障碍服务（PRD 三、防绕过）。
+          只监听窗口切换事件、不读取窗口内容（canRetrieveWindowContent=false），
+          因为判定"是否切到了非白名单应用"只需要包名。
+        -->
+        <service
+            android:name=".service.SleepAccessibilityService"
+            android:exported="true"
+            android:label="@string/accessibility_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- 设备管理员：防强制停止、防卸载（PRD 三） -->
+        <receiver
+            android:name=".receiver.SleepDeviceAdminReceiver"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLE_REQUESTED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 开机自启 + 重启后自动恢复（PRD 2.2.1 / 三） -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 防系统时间篡改（PRD 三）。服务内还会动态注册同一套，双保险。 -->
+        <receiver
+            android:name=".receiver.TimeChangeReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- AlarmManager 到点唤醒（PRD 2.2.1） -->
+        <receiver
+            android:name=".receiver.AlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
+    </application>
+</manifest>

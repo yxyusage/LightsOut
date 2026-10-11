@@ -1,0 +1,20 @@
+{
+  "name": "xideng",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "熄灯早睡 (Lights Out) — 到点接管设备的强制型睡眠辅助工具",
+  "keywords": ["sleep", "pwa", "focus", "digital-wellbeing", "agent", "支付宝智能体涌现奖"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\"",
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/serve.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
