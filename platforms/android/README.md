@@ -5,24 +5,39 @@ Kotlin + AndroidX 的原生实现。这是**唯一能真正做到 PRD 第三节�
 
 ---
 
-## ⚠️ 验证状态：本工程未编译验证
-
-**必须说清楚**：这份代码是在一个**没有 Android SDK、且 Maven Central（repo.maven.apache.org）不可达**
-的环境中编写的，因此：
+## 验证状态
 
 | 项目 | 状态 |
 | --- | --- |
-| Gradle 构建 / 编译 | ❌ **从未执行过** |
-| 真机或模拟器运行 | ❌ **从未执行过** |
-| 单元测试 / 仪器测试 | ❌ 未编写、未执行 |
-| 静态自查：manifest 声明的组件是否都有对应源文件 | ✅ 已自查通过（13/13） |
-| 静态自查：manifest 引用的资源是否存在 | ✅ 已自查通过 |
+| Gradle 构建 / 编译 Debug APK | ✅ **由 GitHub Actions 完成，构建成功并产出 APK** |
+| 真机或模拟器运行 | ❌ 尚未在真实设备上跑过 |
+| 单元测试 / 仪器测试 | ❌ 未编写 |
+| 静态自查：manifest 声明的组件是否都有对应源文件 | ✅ 通过（13/13） |
+| 静态自查：manifest 引用的资源是否存在 | ✅ 通过 |
 
-Maven Central 不可达意味着 Gradle **无法解析 AGP、AndroidX、Kotlin 标准库**，
-连「能不能编译」这一步都无法开始。这不是"暂时没跑"，而是本环境根本不具备条件。
+### 背景：为什么编译验证放在 CI 而不是本机
 
-**因此：本工程应当被当作"一份完整但未经编译验证的实现"来看待。**
-首次构建时很可能需要修掉若干编译错误。我们选择如实标注，而不是含糊其辞地宣称"已完成"。
+这份代码最初是在一台**没有 Android SDK、且 Maven Central 不可达**的机器上写的，
+连「能不能编译」都无法开始。解法不是在本地补齐工具链，而是**把编译交给 GitHub Actions**
+—— runner 自带 JDK 与 Android SDK，直接把这件工作接了过去。
+
+首次真正编译时暴露了 3 个错误，均已修复：
+
+| 文件 | 错误 | 修法 |
+| --- | --- | --- |
+| `BlackoutActivity.kt` | 调用了未定义的 `requestAiCopy` | 按 AppGraph 现有 API 补上该函数 |
+| `SettingsActivity.kt`（两处） | `setOnCheckedChangeListener` 的 lambda 参数写成了子类 `SwitchCompat`，而 SAM 签名要求父类 `CompoundButton` | 改为 `CompoundButton` 并补 import |
+
+**这意味着：本工程现在是真的能编译出 APK 的**，不再是"看起来应该能编译"。
+
+### 拿 APK
+
+1. 打开仓库的 **Actions** 标签，选 **Build Android APK**；
+2. 进最近一次成功的运行，页面底部 **Artifacts** 里下载 **xideng-debug-apk**；
+3. 解压得到 `app-debug.apk`，传到手机上安装。
+
+> 产物是 **debug 签名**，只能侧载安装，不能上架应用商店 —— 这对本项目是预期行为
+> （见下方「已知限制」第 2 条）。
 
 ---
 
