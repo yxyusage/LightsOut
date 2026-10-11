@@ -1,0 +1,14 @@
+# 抓帧中间产物（体积大、可随时重新生成）
+frames/
+frames-*/
+tmp/
+
+# npm 依赖（当前管线零依赖，保留以防后续引入 hyperframes）
+node_modules/
+package-lock.json
+
+# 渲染临时文件
+renders/*.tmp
+renders/frames/
+
+# 保留交付物：renders/*.mp4、*.srt、字幕总表.txt、系列对比图.png

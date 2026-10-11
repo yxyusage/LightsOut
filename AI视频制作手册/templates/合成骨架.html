@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<title>合成骨架 · 直接改内容</title>
+<link rel="stylesheet" href="assets/kit.css">
+<style>
+  /* ===== 本片专有样式写在这里 ===== */
+</style>
+</head>
+<body>
+
+<div id="root" data-composition-id="v01" data-start="0" data-duration="16.6"
+     data-width="1920" data-height="1080" data-fps="30">
+
+  <div id="scene" class="clip" data-start="0" data-duration="16.6">
+
+    <!-- 背景：打光 + 地脚 + 暗角 + 纸纹（kit 提供） -->
+    <div class="bg" data-layout-ignore>
+      <div class="bg-top"></div>
+      <div class="bg-floor"></div>
+      <div class="bg-vignette"></div>
+    </div>
+    <svg class="grain" width="1920" height="1080" data-layout-ignore>
+      <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/></filter>
+      <rect width="1920" height="1080" filter="url(#g)"/>
+    </svg>
+
+    <!-- 章节标签常驻，突出分块 -->
+    <div class="chapter" id="chapter"><span class="idx">01</span><span>段落名</span><span class="bar"></span></div>
+
+    <!-- ===== 3D 物块托起真实界面（可选）=====
+    <div class="stage3d" style="left:360px;top:180px;width:1200px;height:700px">
+      <div class="block" id="slabBlock" style="left:0;top:0;width:1200px;height:700px">
+        <div class="slab-shadow" data-layout-ignore></div>
+        <div class="slab" style="width:1200px;height:700px;padding:14px">
+          <div class="shotClip">
+            <div class="imgwrap">
+              <img class="shotImg" id="shot" src="assets/ui/example.jpg" alt="" data-layout-allow-overflow>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    -->
+
+    <!-- ===== 你的画面元素 ===== -->
+    <div id="title" style="position:absolute;left:0;top:420px;width:100%;text-align:center;
+         font-size:96px;font-weight:600;letter-spacing:-3px;color:var(--ink);opacity:0">标题示例</div>
+
+    <!-- 转场素材（必需） -->
+    <div class="sweep" data-layout-allow-occlusion></div>
+    <div class="flash" data-layout-allow-occlusion></div>
+    <div class="subline" data-layout-ignore><i></i></div>
+    <div class="subwrap" id="subwrap"></div>
+
+  </div>
+</div>
+
+<script src="assets/vendor/gsap.min.js"></script>
+<script src="assets/kit.js"></script>
+<script>
+(function () {
+  "use strict";
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused: true });
+  const scene = document.getElementById("scene");
+
+  /* ---------- 字幕：时间来自 assets/cues.json，勿改 ---------- */
+  const CUES = [
+    { t: 0.9, text: "第一句字幕文案。" }
+  ];
+  BL.subtitles(tl, CUES, { total: 16.6 });
+
+  /* 动画鼠标（初始不可见，appear 时才淡入） */
+  const cur = BL.cursor(scene);
+
+  /* ---------- 0.0–1.2 背景建立 ---------- */
+  tl.fromTo(".bg-top", { opacity: 0 }, { opacity: 1, duration: 1.2, ease: "power2.out" }, 0);
+  tl.fromTo("#chapter", { opacity: 0, x: -18 }, { opacity: 1, x: 0, duration: .22, ease: "expo.out" }, 0.04);
+
+  /* ---------- 主体动画 ---------- */
+  tl.fromTo("#title", { opacity: 0, y: 30, clipPath: "inset(0 100% 0 0)" },
+                     { opacity: 1, y: 0, clipPath: "inset(0 0% 0 0)", duration: .9, ease: "expo.out" }, 1.2);
+
+  /* 转场示例：光带扫过 */
+  tl.set(".sweep", { x: -520, opacity: 0, skewX: -14 }, 6.0);
+  tl.to(".sweep", { opacity: .95, duration: .3 }, 6.0);
+  tl.to(".sweep", { x: 1920, duration: .8, ease: "power2.inOut" }, 6.0);
+
+  /* 特写示例（对真实截图推近到某个界面坐标）
+     BL.cam(tl, document.getElementById("shot"), { at: 8.0, dur: 1.1, z: 2.1, x: 850, y: 143 }); */
+
+  /* 光标点击示例
+     cur.appear(tl, 3.0, 1200, 700);
+     cur.to(tl, 1490, 143, 3.4, .8);
+     cur.click(tl, 4.3, 1490, 143); */
+
+  /* ---------- 收尾：淡出只占最后 ~6% ---------- */
+  tl.to("#scene", { opacity: 0, duration: .5, ease: "power2.in" }, 16.0);
+
+  window.__timelines["v01"] = tl;
+  tl.seek(0);
+})();
+</script>
+</body>
+</html>

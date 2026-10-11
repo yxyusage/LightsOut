@@ -132,20 +132,62 @@ Web 版给出的等效体验是：**「添加到主屏幕」后以 standalone �
 
 只需要 **Node.js ≥ 18**。**没有任何 npm 依赖**，不需要 `npm install`。
 
-### 本地运行
+### 本地运行（电脑）
 
 ```bash
 git clone <你的仓库地址>
 cd xideng
 
-# 启动本地静态服务器（PWA 的 Service Worker 需要 http 上下文）
+# 启动本地静态服务器
 node scripts/serve.mjs
 ```
 
-打开 <http://127.0.0.1:5180/> 即可。
+然后在浏览器打开 <http://127.0.0.1:5180/>。服务器启动时会打印所有可用地址：
+
+```
+  电脑上打开：
+    http://127.0.0.1:5180/
+
+  手机上打开（需与电脑连同一个 Wi-Fi）：
+    http://192.168.1.23:5180/        （WLAN）
+```
 
 > 直接双击 `apps/web/index.html` 也能看到界面，但 `file://` 下 Service Worker 与
 > 「添加到主屏幕」不可用，因此**开发时请走本地服务器**。
+
+### 在手机上预览
+
+服务器默认绑定 `0.0.0.0`，同一 Wi-Fi 下的手机可以直接访问。
+
+1. 确认手机与电脑连的是**同一个 Wi-Fi**；
+2. 在手机浏览器输入启动时打印的那个局域网地址（形如 `http://192.168.1.23:5180/`）；
+3. 打开后点「**立即体验熄灯模式**」——不必等到晚上 23:00 就能看到熄灯界面。
+
+**如果手机打不开**，几乎一定是 **Windows 防火墙**拦住了。先看一下当前网络类别：
+
+```powershell
+Get-NetConnectionProfile | Select-Object InterfaceAlias, NetworkCategory
+```
+
+然后在**以管理员身份运行**的 PowerShell 里放行这一个端口。
+**注意要用 `-Profile Any`**：只写 `-Profile Private` 在「公用网络」下**不会生效**，
+而连接手机热点时通常就是公用网络。
+
+```powershell
+New-NetFirewallRule -DisplayName "熄灯早睡 本地预览 5180" -Direction Inbound -Protocol TCP -LocalPort 5180 -Action Allow -Profile Any
+```
+
+用完后想删掉：
+
+```powershell
+Remove-NetFirewallRule -DisplayName "熄灯早睡 本地预览 5180"
+```
+
+> **手机上 PWA 能力的限制**：局域网 `http://192.168.x.x` 属于**不安全上下文**，
+> 浏览器会拒绝注册 Service Worker 与 Wake Lock。因此手机上界面与熄灯功能完全正常，
+> 但「**离线可用**」与「**安装为应用**」这两项用不了 —— 它们需要 HTTPS。
+> 要完整体验 PWA，请先部署到公网（见 [docs/DEPLOY.md](docs/DEPLOY.md)），
+> 那里有 GitHub Pages 的一次性配置方案，免费且稳定。
 
 ### 构建发布产物
 

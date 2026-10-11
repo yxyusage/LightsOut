@@ -1,0 +1,158 @@
+/* 系统自带中文字体声明（无内置中文字形，必须显式声明，否则渲染回落） */
+@font-face{font-family:"PingFang SC";font-weight:400;src:local("PingFang SC");font-display:block}
+@font-face{font-family:"PingFang SC";font-weight:500;src:local("PingFang SC Medium"),local("PingFangSC-Medium"),local("PingFang SC");font-display:block}
+@font-face{font-family:"PingFang SC";font-weight:600;src:local("PingFang SC Semibold"),local("PingFangSC-Semibold"),local("PingFang SC");font-display:block}
+@font-face{font-family:"Hiragino Sans GB";font-weight:400;src:local("Hiragino Sans GB");font-display:block}
+
+/* ============================================================================
+   BiliLearn-AI 宣传片 · 统一视觉系统
+   米白偏白底 + 3D 简洁物块 + 流线引导 + 真实界面特写
+   取色全部来自 app 自身主题（纸墨青）
+   ========================================================================== */
+
+:root{
+  /* ---- 画布 ---- */
+  --paper:      #F7F6F3;   /* 米白偏白主底 */
+  --paper-hi:   #FFFFFF;   /* 顶部打光 */
+  --paper-lo:   #EDEAE4;   /* 底部环境 */
+  --grain:      0.030;
+
+  /* ---- 墨色三级 ---- */
+  --ink:        #1B2429;
+  --ink-2:      #5A656B;
+  --ink-3:      #9AA3A7;
+
+  /* ---- app 主色 ---- */
+  --teal:       #0D7E70;
+  --teal-hi:    #16A08E;
+  --teal-soft:  #E6F4F1;
+  --amber:      #B45309;
+  --amber-soft: #FBF3E2;
+
+  /* ---- 知识点徽标 8 色（app 原值） ---- */
+  --b-def:  #1D4ED8;  --b-con: #0D7E70;  --b-der: #6D28D9;  --b-exa: #B45309;
+  --b-cod:  #334155;  --b-cmp: #0E7490;  --b-ccl: #047857;  --b-key: #BE123C;
+
+  /* ---- 卡片/阴影 ---- */
+  --card:   #FFFFFF;
+  --line:   #E7E4DC;
+  --sh-sm:  0 2px 8px rgba(23,32,38,.06);
+  --sh-md:  0 16px 40px rgba(23,32,38,.10);
+  --sh-lg:  0 40px 90px rgba(23,32,38,.18), 0 8px 24px rgba(23,32,38,.08);
+  --r-card: 18px;
+  --r-ui:   14px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--paper)}
+body{
+  font-family:"Helvetica Neue",Helvetica,Arial,"PingFang SC","Hiragino Sans GB",sans-serif;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;color:var(--ink);
+}
+#root{position:relative;width:100%;height:100%}
+.clip{position:absolute;left:0;top:0;width:100%;height:100%}
+.scene{position:absolute;inset:0;overflow:hidden}
+
+/* ---------- 背景：打光 + 纸纹 + 地脚 ---------- */
+.bg{position:absolute;inset:0}
+.bg-top{position:absolute;left:50%;top:-380px;width:2100px;height:1100px;transform:translateX(-50%);
+  background:radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,.95), rgba(255,255,255,0) 70%)}
+.bg-floor{position:absolute;left:0;right:0;bottom:0;height:460px;
+  /* 收在 --paper：渲染视口比画布矮 87px，这样死区与画面无缝 */
+  background:linear-gradient(180deg, rgba(237,234,228,0) 0%, rgba(233,229,221,.75) 52%,
+    rgba(247,246,243,1) 84%, rgba(247,246,243,1) 100%)}
+.bg-vignette{position:absolute;inset:0;
+  background:radial-gradient(1400px 860px at 50% 40%, rgba(0,0,0,0) 58%,
+    rgba(120,112,96,.10) 86%, rgba(120,112,96,0) 100%)}
+.grain{position:absolute;inset:0;opacity:var(--grain);mix-blend-mode:multiply;pointer-events:none}
+/* 渲染视口比画布矮 87px（新版 headless 的浏览器边框），画布下方由底色填充。
+   这里把画面最后一截收成纯米白，与填充区完全对齐，肉眼看不出分界。 */
+.bg::after{content:"";position:absolute;left:0;right:0;bottom:0;height:240px;pointer-events:none;
+  background:linear-gradient(180deg, rgba(247,246,243,0) 0%, rgba(247,246,243,.92) 52%, #F7F6F3 100%)}
+
+/* ---------- 排版 ---------- */
+.h1{font-size:96px;font-weight:700;letter-spacing:-3px;line-height:1.08;color:var(--ink)}
+.h2{font-size:64px;font-weight:700;letter-spacing:-1.8px;line-height:1.14;color:var(--ink)}
+.h3{font-size:40px;font-weight:700;letter-spacing:-.6px;color:var(--ink)}
+.body{font-size:30px;font-weight:400;line-height:1.55;color:var(--ink-2)}
+.mono{font-family:"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.accent{color:var(--teal)}
+
+/* 关键词高亮：笔刷式底色（Apple keynote 的强调手法） */
+.mark{position:relative;display:inline-block;white-space:nowrap}
+.mark > .mark-bg{position:absolute;left:-8px;right:-8px;top:14%;bottom:8%;
+  background:var(--teal-soft);border-radius:10px;transform-origin:left center}
+.mark.warm > .mark-bg{background:var(--amber-soft)}
+.mark > span{position:relative}
+
+/* 章节标签（常驻左上，突出重点） */
+.chapter{position:absolute;left:112px;top:96px;display:flex;align-items:center;gap:14px;
+  font-size:26px;font-weight:600;letter-spacing:.5px;color:var(--ink-2);opacity:0}
+.chapter .idx{font-family:"SF Mono",Menlo,monospace;font-size:22px;font-weight:400;
+  color:#fff;background:var(--teal);border-radius:8px;padding:4px 10px 5px}
+.chapter .bar{width:56px;height:3px;border-radius:2px;background:var(--teal);opacity:.35}
+
+/* ---------- 3D 舞台：简洁物块把画面托起 ---------- */
+.stage3d{position:absolute;perspective:2400px;perspective-origin:50% 46%}
+.block{position:absolute;transform-style:preserve-3d;will-change:transform}
+.slab{position:relative;transform-style:preserve-3d;border-radius:24px;background:var(--card);
+  box-shadow:var(--sh-lg)}
+.slab::after{ /* 物块厚度 */
+  content:"";position:absolute;left:8px;right:8px;top:100%;height:22px;
+  background:linear-gradient(180deg,#E4E0D8,#CFCAC0);border-radius:0 0 20px 20px;
+  transform:translateZ(-2px);filter:blur(.4px)}
+.slab-shadow{position:absolute;left:4%;right:4%;top:calc(100% - 26px);height:90px;border-radius:50%;
+  background:radial-gradient(50% 50% at 50% 50%, rgba(60,54,44,.34), rgba(60,54,44,0) 72%);
+  filter:blur(16px);transform:translateZ(-40px)}
+
+/* 真实界面贴图 */
+.shotClip{position:absolute;inset:0;overflow:hidden;border-radius:var(--r-card);background:#fff}
+.shotClip::after{content:"";position:absolute;inset:0;border-radius:inherit;
+  border:1px solid rgba(23,32,38,.08);pointer-events:none}
+.shotImg{position:absolute;left:0;top:0;width:100%;height:100%;display:block;
+  transform-origin:50% 50%;will-change:transform}
+
+/* ---------- 玻璃 / 卡片 / 标签 ---------- */
+.card{position:absolute;background:var(--card);border:1px solid var(--line);border-radius:var(--r-ui);
+  box-shadow:var(--sh-sm)}
+.glass{background:rgba(255,255,255,.72);backdrop-filter:blur(24px) saturate(150%);
+  border:1px solid rgba(255,255,255,.85);box-shadow:0 18px 46px rgba(23,32,38,.13)}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;
+  background:var(--teal-soft);color:var(--teal);font-size:24px;font-weight:600}
+.badge{display:inline-flex;align-items:center;padding:5px 14px 6px;border-radius:8px;
+  font-size:22px;font-weight:600;color:#fff}
+
+/* ---------- 流线型引导线 ---------- */
+.stream{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.stream path{fill:none;stroke:var(--teal);stroke-width:3;stroke-linecap:round;opacity:.55}
+.stream .glow{stroke:var(--teal-hi);stroke-width:9;opacity:.16;filter:blur(6px)}
+.trail-dot{fill:var(--teal);filter:drop-shadow(0 0 8px rgba(13,126,112,.55))}
+
+/* ---------- 动画鼠标 ---------- */
+.cursor{position:absolute;left:0;top:0;width:34px;height:40px;pointer-events:none;z-index:60;opacity:0;
+  transform-origin:6px 4px;filter:drop-shadow(0 4px 10px rgba(23,32,38,.35))}
+.ripple{position:absolute;left:0;top:0;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
+  border:3px solid var(--teal);opacity:0;pointer-events:none;z-index:59}
+.ripple.solid{background:rgba(13,126,112,.22);border-color:transparent}
+
+/* ---------- 字幕（口播节奏） ---------- */
+.subwrap{position:absolute;inset:0;pointer-events:none;z-index:80}
+.subrow{position:absolute;left:0;right:0;bottom:104px;display:flex;justify-content:center;padding:0 60px}
+.sub{position:relative;max-width:1560px;padding:14px 34px 16px;border-radius:16px;text-align:center;white-space:nowrap;
+  font-size:34px;font-weight:500;letter-spacing:.5px;color:#fff;opacity:0;
+  background:rgba(20,26,31,.80);backdrop-filter:blur(10px);
+  box-shadow:0 10px 30px rgba(23,32,38,.22)}
+.sub.light{color:var(--ink);background:rgba(255,255,255,.90);border:1px solid rgba(23,32,38,.06)}
+.sub em{font-style:normal;color:#7FE3D2}
+
+/* 字幕进度细线（让剪辑对位更直观） */
+.subline{position:absolute;left:0;right:0;bottom:92px;height:2px;background:rgba(23,32,38,.08);z-index:79}
+.subline i{position:absolute;left:0;top:0;height:100%;width:0;background:var(--teal);opacity:.55}
+
+/* ---------- 转场素材 ---------- */
+.sweep{position:absolute;top:0;bottom:0;width:26%;pointer-events:none;z-index:70;opacity:0;
+  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.92),rgba(255,255,255,0))}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:95}
+.inkpanel{position:absolute;inset:0;background:#141A1F;opacity:0;z-index:90}
+.flipshadow{position:absolute;inset:0;background:linear-gradient(90deg,rgba(23,32,38,.28),rgba(23,32,38,0) 60%);
+  opacity:0;pointer-events:none;border-radius:var(--r-card);z-index:5}
