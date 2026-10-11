@@ -18,6 +18,7 @@ on:
       - 'platforms/android/**'
   workflow_dispatch:
 
+# 需要 write 权限：一是把失败的构建日志推到 ci-logs 分支，二是把 APK 发布到 Release
 permissions:
   contents: write
 
@@ -104,6 +105,23 @@ jobs:
           path: platforms/android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
           retention-days: 30
+
+      # 把 APK 发到 Release —— Actions 的 Artifacts 需要登录才能下载，
+      # 而 Release 附件任何人都能直接下载（评审、朋友、手机浏览器都可以）。
+      - name: 发布到 Release（免登录下载）
+        if: always() && hashFiles('platforms/android/app/build/outputs/apk/debug/*.apk') != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK=$(ls platforms/android/app/build/outputs/apk/debug/*.apk | head -1)
+          echo "准备发布: $APK"
+          # 固定复用同一个标签并每次覆盖，保证 README 里的固定链接永远指向最新构建
+          gh release view android-latest >/dev/null 2>&1 || gh release create android-latest \
+            --title "Android 最新构建（自动发布）" \
+            --notes "由 GitHub Actions 在 main 分支构建成功后自动更新。debug 签名，仅供侧载试用，不能上架应用商店。" \
+            --prerelease
+          gh release upload android-latest "$APK#app-debug.apk" --clobber
+          echo "已发布到 Release: android-latest"
 
       # 关键：把构建日志推到一个独立分支。
       # GitHub 的日志下载接口对匿名访问返回 403，推到分支后即可匿名读取，
