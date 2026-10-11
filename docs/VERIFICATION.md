@@ -15,7 +15,7 @@
 ## 1. 单元测试：108 项，全部通过
 
 ```bash
-npm test        # node --test "tests/**/*.test.js"
+npm test        # node --test（自动发现用例，Node 18+ 通用）
 ```
 
 ```
