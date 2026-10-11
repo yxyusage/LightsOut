@@ -24,7 +24,7 @@ import java.lang.ref.WeakReference
  * [com.xideng.sleep.lock.LockController] 自动切换到 [BlackoutActivity]。
  *
  * 额外支持"预览模式"：从主界面点进来时给 30 秒倒计时，
- * 让评审不必真的等到 23:00 就能看到这个弹窗长什么样。
+ * 让人不必真的等到 23:00 就能看到这个弹窗长什么样。
  */
 class WarningActivity : AppCompatActivity() {
 

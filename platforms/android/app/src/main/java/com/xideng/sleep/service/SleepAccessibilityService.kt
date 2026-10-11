@@ -17,7 +17,7 @@ import com.xideng.sleep.ui.BlackoutActivity
  *
  * 边界必须诚实说明：无障碍服务能"看到"前台包名，但**无法阻止应用启动**，
  * 也无法杀掉别的应用。它实现的是"你逃不掉熄灯状态"，不是"你打不开微信"。
- * 这个边界写在 README 与赛事作品说明里，不做夸大宣传。
+ * 这个边界写在 README 与引导页里，不做夸大宣传。
  */
 class SleepAccessibilityService : AccessibilityService() {
 

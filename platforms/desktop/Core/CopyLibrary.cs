@@ -15,7 +15,8 @@ public sealed record CopyEntry(string Id, string Kind, string Text, string? Sour
 ///   <item><c>comfort</c>：情绪安抚语句，不带事实断言，因此无需引用。</item>
 /// </list>
 ///
-/// 赛事规则禁止"虚构数据、伪造案例或误导用户"。为此这里坚持三条纪律：
+/// 睡眠类产品最容易出现随口编造的吓人数字，而一旦被发现，整个产品的可信度就没了。
+/// 为此这里坚持三条纪律：
 /// 只收录能查到出处的结论；每条危害数据必须给出 <c>Source</c>；不写伪精确数字。
 /// </summary>
 public static class CopyLibrary

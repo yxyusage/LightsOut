@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "熄灯早睡 (Lights Out) — 到点接管设备的强制型睡眠辅助工具",
-  "keywords": ["sleep", "pwa", "focus", "digital-wellbeing", "agent", "支付宝智能体涌现奖"],
+  "keywords": ["sleep", "pwa", "focus", "digital-wellbeing", "offline-first", "zero-dependency"],
   "license": "MIT",
   "engines": {
     "node": ">=18"

@@ -15,7 +15,7 @@
    熄灯早睡 · Lights Out —— 到点全屏接管设备的强制型睡眠辅助工具。Web/PWA + 桌面端 + Android，零依赖、离线可用、数据不出本机。
    ```
 
-4. 可见性选 **Public**（赛事作品建议公开，便于评审查看）；
+4. 可见性选 **Public**（公开仓库更利于被复用与被审计）；
 5. **不要**勾选 "Add a README file"、"Add .gitignore"、"Choose a license" —— 本地已经都有了；
 6. 点 **Create repository**。
 
@@ -68,7 +68,7 @@ web-audio  offline-first  zero-dependency  android  avalonia  mit-license
    https://<你的用户名>.github.io/xideng/
    ```
 
-这个地址就是**赛事提交表单里的「作品 URL」**。
+这个地址就可以直接分享给别人 —— 一个链接，打开即用，不需要安装。
 
 > 应用内部全部使用相对路径，所以部署在 `/xideng/` 这样的子路径下不需要任何额外配置。
 
@@ -76,17 +76,17 @@ web-audio  offline-first  zero-dependency  android  avalonia  mit-license
 
 ## 5. 打标签并发布 Release（可选，但推荐）
 
-赛事材料里可以附上 Release 链接，显得更完整：
+打一个版本标签，方便别人引用或回退：
 
 ```bash
-git tag -a v1.0.0 -m "熄灯早睡 v1.0.0 — 参赛版本"
+git tag -a v1.0.0 -m "熄灯早睡 v1.0.0"
 git push origin v1.0.0
 ```
 
 然后在 GitHub 的 **Releases → Draft a new release**：
 
 - Tag：`v1.0.0`
-- Title：`熄灯早睡 v1.0.0 — 参赛版本`
+- Title：`熄灯早睡 v1.0.0`
 - 描述：把 `CHANGELOG.md` 里 1.0.0 那一节贴进去；
 - 附件：可以上传一个打包好的静态站点压缩包，方便别人直接下载部署。
 
@@ -114,21 +114,20 @@ git push origin v1.0.0
 
 | 目录 | 状态 | 说明 |
 | --- | --- | --- |
-| `apps/web` | ✅ 已完成，已通过 108 项单测与截图验证 | 赛事提交的作品主体 |
+| `apps/web` | ✅ 已完成，已通过 111 项单测与截图验证 | 立即可用的 Web / PWA 版本 |
 | `platforms/desktop` | 见该目录 README | Avalonia 跨平台桌面端 |
 | `platforms/android` | 见该目录 README | Kotlin 原生端 |
 
-**原生端在当前开发环境未能完成编译验证**（缺少 Android SDK 与相应工具链），
-这一限制已如实写在各自的 README 与主 README 中。
-如果评审或贡献者需要，可以在具备工具链的环境按各自 README 的步骤构建。
+桌面端已通过构建与 259 项自检；Android 端由 GitHub Actions 构建 Debug APK
+（见 `.github/workflows/build-android.yml`，产物在 Actions 的 Artifacts 里）。
+两个端的具体验证状态见各自的 README。
 
 ---
 
 ## 8. 后续维护建议
 
-- **评审期间保持可访问**：赛事要求作品在投稿及评审期间保持可访问状态
-  （第一期季度赛：2026-12-06 截止，之后约 10 个工作日评审）。GitHub Pages 免费且稳定，
-  不需要额外维护。
+- **保持可访问**：这个产品只有"能用"才有价值。GitHub Pages 免费且稳定，
+  不需要额外维护 —— 这正是选择纯静态部署的原因之一。
 - **提交信息写清楚「为什么」**：这是给未来贡献者（和未来的自己）看的。
 - **不要提交 `dist/`**：它已经在 `.gitignore` 里，由 CI 构建。
 - **开启 Dependabot**：本项目零依赖，所以基本不会有告警 —— 这本身就是零依赖的一个好处。

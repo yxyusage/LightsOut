@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-熄灯早睡 · 图标与赛事封面生成脚本
+熄灯早睡 · 图标与社交预览图生成脚本
 
 产物（全部写入 apps/web/assets/）：
   icon-192.png            应用图标
@@ -9,11 +9,10 @@
   icon-maskable-512.png   Android 自适应图标（内容内缩到安全区）
   apple-touch-icon.png    iOS 主屏图标
   favicon.png             浏览器标签页图标
-  cover-16x9.png          赛事封面（1920x1080，16:9）
+  cover-16x9.png          社交预览图（1920×1080，16:9，可用作 GitHub Social Preview）
 
 设计依据 PRD 4.2：核心元素为带拉绳的灯泡，简约线性风格，深色背景。
-所有图形都用 Pillow 直接绘制，不依赖外部素材，因此不存在第三方版权问题
-（赛事要求参赛素材必须享有合法权利）。
+所有图形都用 Pillow 直接绘制，不依赖任何外部素材，因此不存在第三方版权问题。
 
 用法：python scripts/make-assets.py
 """
@@ -68,6 +67,24 @@ def radial_glow(size, center, radius, color, max_alpha=120, power=2.2):
     layer[..., 2] = color[2]
     layer[..., 3] = alpha.astype(np.uint8)
     return Image.fromarray(layer, "RGBA")
+
+
+def draw_translucent(canvas, painter):
+    """在单独的透明图层上绘制再合成，保证 alpha 真正生效。
+
+    ⚠️ 这是本项目踩过的一个真实坑：Pillow 的 ImageDraw 在 RGBA 画布上会
+    **直接写入颜色元组、不做 alpha 混合**。也就是说 `fill=(255,255,255,6)`
+    得到的是一块**纯白**，而不是 6% 的淡白。
+
+    症状：封面里手机模型的两个按钮变成了纯白实心块、左下角角标变成实心琥珀色
+    且文字被同色背景吞掉。因为画布最终要 convert("RGB")，alpha 被丢弃，
+    问题在缩略图上也看不出来，很容易蒙混过关。
+
+    修法就是这里：把半透明元素画到独立图层，再用 alpha_composite 合成。
+    """
+    layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    painter(ImageDraw.Draw(layer))
+    return Image.alpha_composite(canvas, layer)
 
 
 def render_lamp(size, inset=0.0, transparent=False):
@@ -149,7 +166,7 @@ def draw_tracked(draw, xy, text, font_obj, fill, tracking=0.0):
 
 
 def render_cover(width=1920, height=1080):
-    """赛事封面：左侧品牌与卖点，右侧熄灯界面示意。"""
+    """社交预览图：左侧品牌与卖点，右侧熄灯界面示意。"""
     canvas = Image.new("RGBA", (width, height), (0, 0, 0, 255))
 
     # 背景：左上角一盏灯的余光
@@ -178,7 +195,15 @@ def render_cover(width=1920, height=1080):
     draw_tracked(draw, (title_x + 4, title_y + 132), "到点熄灯，把手机交还给睡眠", sub_font, LAMP_SOFT, tracking=4)
 
     # 分隔线
-    draw.line([(title_x + 4, height * 0.615), (title_x + 92, height * 0.615)], fill=(255, 190, 106, 150), width=3)
+    canvas = draw_translucent(
+        canvas,
+        lambda d: d.line(
+            [(title_x + 4, height * 0.615), (title_x + 92, height * 0.615)],
+            fill=(255, 190, 106, 150),
+            width=3,
+        ),
+    )
+    draw = ImageDraw.Draw(canvas)
 
     # 卖点
     bullet_font = font(FONT_LIGHT, 33)
@@ -196,16 +221,20 @@ def render_cover(width=1920, height=1080):
 
     # 角标
     badge_font = font(FONT_REGULAR, 25)
-    badge_text = "支付宝「智能体涌现奖」参赛作品 · 生活好帮手"
+    badge_text = "开源 · 零依赖 · 数据不出本机"
     badge_w = text_width(badge_font, badge_text, 1) + 52
     badge_y = height - 122
-    draw.rounded_rectangle(
-        [title_x, badge_y, title_x + badge_w, badge_y + 52],
-        radius=26,
-        fill=(255, 190, 106, 16),
-        outline=(255, 190, 106, 90),
-        width=2,
+    canvas = draw_translucent(
+        canvas,
+        lambda d: d.rounded_rectangle(
+            [title_x, badge_y, title_x + badge_w, badge_y + 52],
+            radius=26,
+            fill=(255, 190, 106, 16),
+            outline=(255, 190, 106, 90),
+            width=2,
+        ),
     )
+    draw = ImageDraw.Draw(canvas)
     draw_tracked(draw, (title_x + 26, badge_y + 12), badge_text, badge_font, LAMP_SOFT, tracking=1)
 
     # ── 右侧：手机与熄灯界面示意 ──
@@ -262,13 +291,17 @@ def render_cover(width=1920, height=1080):
     btn_y = phone_y + phone_h - 190
     for index, label in enumerate(["白名单应用", "助眠音乐"]):
         bx = left + index * (btn_w + gap)
-        draw.rounded_rectangle(
-            [bx, btn_y, bx + btn_w, btn_y + btn_h],
-            radius=20,
-            fill=(255, 255, 255, 6),
-            outline=(255, 255, 255, 22),
-            width=2,
+        canvas = draw_translucent(
+            canvas,
+            lambda d, bx=bx: d.rounded_rectangle(
+                [bx, btn_y, bx + btn_w, btn_y + btn_h],
+                radius=20,
+                fill=(255, 255, 255, 6),
+                outline=(255, 255, 255, 22),
+                width=2,
+            ),
         )
+        draw = ImageDraw.Draw(canvas)
         # 图标圆点替代线稿图标，缩略图尺寸下更清晰
         draw.ellipse([bx + btn_w / 2 - 13, btn_y + 24, bx + btn_w / 2 + 13, btn_y + 50], outline=(122, 92, 51, 255), width=2)
         label_font = font(FONT_LIGHT, 24)
@@ -300,7 +333,7 @@ def main():
     cover_bytes = os.path.getsize(cover_path)
     print("  写入 %-24s %4dx%-4d %6.2f MB" % ("cover-16x9.png", 1920, 1080, cover_bytes / 1024 / 1024))
 
-    # 赛事要求封面不超过 5MB；超限时自动改用 JPEG
+    # 预览图控制在 5MB 以内；超限时自动改用 JPEG
     if cover_bytes > 5 * 1024 * 1024:
         jpg_path = os.path.join(OUT_DIR, "cover-16x9.jpg")
         cover.save(jpg_path, "JPEG", quality=92, optimize=True, subsampling=0)

@@ -203,7 +203,7 @@ const actions = {
     render();
   },
 
-  /* ── 演示模式：让评审不必等到 23:00 ── */
+  /* ── 演示模式：让人不必等到 23:00 就能看效果 ── */
 
   startDemo() {
     ui.demoUntil = Date.now() + DEMO_DURATION_MS;
@@ -504,7 +504,7 @@ function beforeUnloadGuard(event) {
 }
 
 async function installGuards() {
-  // 演示模式下不安装"甩不掉"的守卫，避免把评审困在界面里
+  // 演示模式下不安装"甩不掉"的守卫，避免把只想看看效果的人困在界面里
   const demo = isDemo();
 
   if (!demo) {

@@ -25,7 +25,6 @@
 - [测试](#测试)
 - [设计决策](#设计决策)
 - [隐私](#隐私)
-- [赛事](#赛事)
 - [路线图](#路线图)
 - [许可](#许可)
 
@@ -200,7 +199,7 @@ node scripts/serve.mjs dist
 （GitHub Pages / Vercel / Netlify / 对象存储 / Nginx）即可获得公网可访问的 URL。
 
 部署细节见 [docs/DEPLOY.md](docs/DEPLOY.md)；
-把仓库发布到 GitHub、开启 Pages、拿到赛事用的公网 URL，见 [docs/PUBLISH-GITHUB.md](docs/PUBLISH-GITHUB.md)。
+把仓库发布到 GitHub、开启 Pages、拿到公网 URL，见 [docs/PUBLISH-GITHUB.md](docs/PUBLISH-GITHUB.md)。
 
 ### 跑测试
 
@@ -222,12 +221,12 @@ python scripts/make-assets.py
 
 ```
 .
-├── apps/web/                    参赛作品：Web / PWA 应用（零依赖、零构建）
+├── apps/web/                    Web / PWA 应用（零依赖、零构建）
 │   ├── index.html               应用外壳（含全部界面的静态结构）
 │   ├── manifest.webmanifest     PWA 清单
 │   ├── sw.js                    Service Worker（离线预缓存）
 │   ├── styles/app.css           全部样式（设计令牌 + 各界面）
-│   ├── assets/                  图标与赛事封面
+│   ├── assets/                  应用图标与社交预览图
 │   └── src/
 │       ├── core.js              ★ 指向 packages/core 的唯一引用点
 │       ├── app.js               编排层：相位控制、守卫、动作
@@ -253,7 +252,7 @@ python scripts/make-assets.py
 │   └── android/                 Android（Kotlin）
 ├── scripts/                     build / serve / 素材生成
 ├── tests/                       Node 内置测试运行器
-├── docs/                        文档、设计决策、赛事材料
+├── docs/                        文档与设计决策
 └── .github/                     CI 与协作模板
 ```
 
@@ -276,7 +275,7 @@ python scripts/make-assets.py
    │  PWA     │              │ Avalonia    │            │   Kotlin     │
    │          │              │ + C# 移植    │            │ + assets/wh  │
    └──────────┘              └─────────────┘            └──────────────┘
-   参赛作品 / 立即可用          全屏置顶 + 进程监听          设备管理员 + 无障碍
+   零依赖 / 离线可用            全屏置顶 + 进程监听          设备管理员 + 无障碍
 ```
 
 **关键设计约束**：`packages/core` 里的所有函数都是纯函数，**从不读取系统当前时间**——
@@ -323,8 +322,8 @@ PRD 中存在若干处需要判断的地方，我们的处理方式与理由记�
   0 点重置会在同一次熄灯中间白送 30 分钟额度。我们改为**按熄灯时段计费**，两种行为都有测试覆盖。
 - **PRD 2.2.3「共用总时长」与「电话短信无时长限制」的冲突**：电话/短信标记为不占额度。
 - **调休上班日的归类**：法定调休把周六变成上班日时，当晚按**工作日**时段熄灯。
-- **危害科普的真实性**：赛事禁止虚构数据，因此每条科普都绑定可核查的文献来源，
-  界面上可一键展开溯源。**没有一条数据是编造的。**
+- **危害科普的真实性**：每条科普都绑定可核查的文献来源，界面上可一键展开溯源。
+  **没有一条数据是编造的** —— 睡眠类产品最容易出现随口编造的吓人数字，我们宁可少写。
 
 ---
 
@@ -334,20 +333,6 @@ PRD 中存在若干处需要判断的地方，我们的处理方式与理由记�
 - 配置 AI 后，请求**直接发往你自己填写的接口地址**，不经过任何中转；API Key 只存在本机
 - 提示词中**只包含结构化场景事实**（日期、星期、节假日），不包含任何个人数据
 - 没有任何统计、埋点或崩溃上报
-
----
-
-## 赛事
-
-本项目参与支付宝「**智能体涌现奖**」第一期季度赛，参赛方向「**生活好帮手**」。
-
-- 赛事介绍：见 `docs/reference/赛事介绍.docx`
-- **提交材料汇总（作品说明、封面、演示视频脚本）：[docs/COMPETITION.md](docs/COMPETITION.md)**
-- 演示视频分镜脚本：[docs/VIDEO-SCRIPT.md](docs/VIDEO-SCRIPT.md)
-
-> 需要说明的是，赛事要求提交"可独立运行、可交互体验、可被调用"的智能体作品，
-> 而本项目的产品需求文档描述的是原生 Android 应用。两者的差异与取舍见
-> [docs/DECISIONS.md](docs/DECISIONS.md#1-作品形态web-版与原生-android-版的取舍)。
 
 ---
 

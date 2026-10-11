@@ -6,7 +6,7 @@
  * **等效防护**——它能保证"熄灯状态本身"不被绕过（改时间、切走、刷新、后退都甩不掉），
  * 但无法阻止用户去用别的 App。原生端（platforms/android）才具备系统级接管能力。
  *
- * 这个边界已写进 README 与赛事作品说明，不做夸大宣传。
+ * 这个边界已写进 README 与引导页，不做夸大宣传。
  */
 
 import { CLOCK_TAMPER_TOLERANCE_MS } from "./constants.js";

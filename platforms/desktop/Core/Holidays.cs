@@ -1,6 +1,6 @@
 namespace Xideng.Desktop.Core;
 
-/// <summary>数据来源元信息，会在"关于 / 数据溯源"界面展示（赛事"责任可信"维度）。</summary>
+/// <summary>数据来源元信息，会在"关于 / 数据溯源"界面展示，让每一条文案都可核查。</summary>
 public sealed class HolidayTableSource
 {
     public string Title { get; init; } = "国务院办公厅关于2026年部分节假日安排的通知";
@@ -53,7 +53,7 @@ public sealed record HolidayContext(DateInfo? Yesterday, DateInfo? Today, DateIn
 /// 熄灯早睡 · 中国法定节假日与调休数据（<c>packages/core/src/holidays.js</c> 的 C# 移植）。
 ///
 /// 数据来源为国务院办公厅正式通知，逐日核对过星期。<b>不包含任何推测或杜撰日期</b>，
-/// 因为赛事规则明令禁止"虚构数据、伪造案例或误导用户的内容"。
+/// 因为我们不写任何无法核实的数据。
 ///
 /// 与 JS 版的一致性由 <c>--selftest</c> 保证：自检会把 20 个官方日期与它们在通知中
 /// 写明的星期逐一比对（见 <see cref="OfficialWeekdays"/>），这是防止"抄错一天"最有效的防线。

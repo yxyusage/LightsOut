@@ -269,7 +269,7 @@ class LockController(private val context: Context, private val graph: AppGraph) 
 
     /* ───────────── 演示模式 ───────────── */
 
-    /** 当前是否处于演示模式（让评审不必等到 23:00 就能看到熄灯界面） */
+    /** 当前是否处于演示模式（让人不必等到 23:00 就能看到熄灯界面） */
     fun isDemoActive(): Boolean = isDemo()
 
     private fun isDemo(): Boolean =
