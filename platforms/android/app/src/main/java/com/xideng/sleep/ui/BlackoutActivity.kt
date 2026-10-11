@@ -222,6 +222,33 @@ class BlackoutActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 请求一次 AI 场景化文案（PRD 2.4）。
+     *
+     * 三条约束：
+     *  1. 每次进入熄灯界面只请求一次（[aiRequested] 去重），避免反复打接口；
+     *  2. [AiClient.generate] 是阻塞式的，必须丢到 [AppGraph.ioExecutor]，绝不占用主线程；
+     *  3. 任何失败都静默退回本地文案库 —— 没配 Key、网络不通、接口报错，
+     *     用户看到的依然是一句正常的文案，熄灯流程不受影响。
+     */
+    private fun requestAiCopy(snapshot: EngineSnapshot) {
+        if (aiRequested) return
+        if (!graph.ai.available) return
+        aiRequested = true
+
+        val scene = snapshot.scene
+        graph.ioExecutor.execute {
+            val result = graph.ai.generate(scene)
+            if (!result.ok || result.text.isNullOrBlank()) return@execute
+            handler.post {
+                // 请求返回时用户可能已经退出熄灯界面了
+                if (!resumed) return@post
+                graph.engine.setAiText(result.text)
+                render(graph.engine.snapshot())
+            }
+        }
+    }
+
     /* ───────────── WebView ───────────── */
 
     private fun shouldUseWebView(): Boolean {

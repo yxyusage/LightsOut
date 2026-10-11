@@ -4,6 +4,7 @@ import android.app.TimePickerDialog
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
+import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.SeekBar
 import androidx.appcompat.app.AlertDialog
@@ -63,7 +64,9 @@ class SettingsActivity : AppCompatActivity() {
     /* ═════════════ 睡眠计划（PRD 2.1） ═════════════ */
 
     private fun wirePlan() {
-        binding.switchPlanEnabled.setOnCheckedChangeListener { _: SwitchCompat, checked: Boolean ->
+        // 参数类型必须写成父类 CompoundButton：setOnCheckedChangeListener 的 SAM 签名是
+        // onCheckedChanged(CompoundButton, Boolean)，写成子类 SwitchCompat 会编译不过。
+        binding.switchPlanEnabled.setOnCheckedChangeListener { _: CompoundButton, checked: Boolean ->
             if (updatingUi) return@setOnCheckedChangeListener
             graph.settingsStore.update { it.copy(plan = it.plan.copy(enabled = checked)) }
             afterChange()
@@ -286,7 +289,7 @@ class SettingsActivity : AppCompatActivity() {
     /* ═════════════ AI 文案（PRD 2.4） ═════════════ */
 
     private fun wireAi() {
-        binding.switchAiEnabled.setOnCheckedChangeListener { _: SwitchCompat, checked: Boolean ->
+        binding.switchAiEnabled.setOnCheckedChangeListener { _: CompoundButton, checked: Boolean ->
             if (updatingUi) return@setOnCheckedChangeListener
             graph.settingsStore.update { it.copy(ai = it.ai.copy(enabled = checked)) }
             render()
