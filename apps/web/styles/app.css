@@ -149,9 +149,10 @@ code { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size:
 .btn:active { transform: scale(0.985); }
 .btn:hover { background: var(--surface-3); }
 .btn--primary {
-  background: linear-gradient(180deg, rgba(255, 215, 160, 0.16), rgba(255, 190, 106, 0.09));
-  border-color: rgba(255, 190, 106, 0.4);
+  background: linear-gradient(180deg, rgba(255, 215, 160, 0.17), rgba(255, 190, 106, 0.075));
+  border-color: rgba(255, 190, 106, 0.38);
   color: var(--lamp);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 205, 0.14), 0 8px 22px -14px rgba(255, 190, 106, 0.55);
 }
 .btn--primary:hover { background: linear-gradient(180deg, rgba(255, 215, 160, 0.22), rgba(255, 190, 106, 0.13)); }
 .btn--danger { border-color: rgba(255, 155, 138, 0.36); color: var(--danger); background: rgba(255, 155, 138, 0.07); }
@@ -187,6 +188,7 @@ code { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size:
 
 /* ───────────── 6. 卡片 ───────────── */
 .card {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -194,6 +196,17 @@ code { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size:
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+/* 发丝高光：1px 的极淡亮线。成本几乎为零，但能明显提升精致度 */
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 18px;
+  right: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent);
+  pointer-events: none;
 }
 .card > h2 {
   display: flex; align-items: center; gap: 9px;
@@ -323,10 +336,50 @@ input[type="range"]::-moz-range-thumb {
 .tag--on { background: rgba(143, 214, 168, 0.12); color: var(--ok); }
 .tag--off { background: rgba(255, 255, 255, 0.05); color: var(--text-faint); }
 
-.feature-list { display: flex; flex-direction: column; gap: 15px; }
-.feature-list li { display: flex; flex-direction: column; gap: 3px; }
-.feature-list strong { font-size: 0.92rem; font-weight: 400; color: var(--text); }
-.feature-list span { font-size: 0.79rem; color: var(--text-faint); }
+/* 引导页特性：2×2 图标卡片。比纯文本列表更好扫读，也更像"产品"而不是"说明书"。
+   minmax(0, 1fr) 是必须的 —— 用 1fr 的话卡片内容的最小宽度会顶破栅格，
+   在窄屏上造成横向溢出（这个坑在本项目的布局测量里踩过一次）。 */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.feature-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 15px 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.008));
+}
+/* 顶部发丝高光：给卡片一点"被光扫到"的材质感，而不是一块死平的色块 */
+.feature-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 214, 160, 0.32), transparent);
+}
+.feature-card__icon {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: rgba(255, 190, 106, 0.085);
+  border: 1px solid rgba(255, 190, 106, 0.16);
+  color: var(--lamp-soft);
+  margin-bottom: 2px;
+}
+.feature-card__icon svg { width: 16px; height: 16px; stroke-width: 1.5; }
+.feature-card strong { font-size: 0.86rem; font-weight: 400; color: var(--text); letter-spacing: 0.01em; }
+.feature-card > span:last-child { font-size: 0.72rem; color: var(--text-faint); line-height: 1.6; }
 
 .app-list { display: flex; flex-direction: column; gap: 9px; }
 .app-list li {
@@ -454,6 +507,9 @@ input[type="range"]::-moz-range-thumb {
 @media (prefers-reduced-motion: reduce) {
   .lamp--enter .lamp__assembly, .lamp--exit .lamp__assembly { animation: none; }
   .screen, .onboard__step { animation: none; }
+  /* 呼吸光晕属于纯装饰，用户要求减少动效时直接关掉 */
+  .blackout__ambience { animation: none; opacity: 0.6; }
+  .blackout__progress-fill { transition: none; }
 }
 
 /* ───────────── 11. 预告弹窗（PRD 2.1.2）───────────── */
@@ -499,6 +555,48 @@ input[type="range"]::-moz-range-thumb {
   text-align: center;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* 呼吸光晕：14 秒一个周期、极低亮度。让纯黑界面「活着」，
+   同时呼应产品图标里的那盏灯 —— 而不是一片死寂的黑色。 */
+.blackout__ambience {
+  position: absolute;
+  left: 50%;
+  top: 27%;
+  width: min(132vw, 580px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 190, 106, 0.12) 0%,
+    rgba(255, 190, 106, 0.045) 38%,
+    transparent 68%
+  );
+  animation: blackout-breathe 14s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes blackout-breathe {
+  0%, 100% { opacity: 0.45; transform: translate(-50%, -50%) scale(0.93); }
+  50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1.07); }
+}
+
+/* 今夜进度：把「还要熬多久」变成一眼可见的进度，而不是一串需要心算的数字 */
+.blackout__progress {
+  width: 132px;
+  height: 2px;
+  margin-top: 7px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+.blackout__progress-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(255, 190, 106, 0.3), rgba(255, 215, 160, 0.85));
+  transition: width 0.9s linear;
 }
 
 .blackout__demo {

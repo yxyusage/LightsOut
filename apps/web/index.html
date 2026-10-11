@@ -25,6 +25,10 @@
     <path d="M9 6.5A5 5 0 0 1 15 6.5" />
     <circle cx="12" cy="11.5" r="3.2" />
   </symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8.4" />
+    <path d="M12 7.2V12l3.3 1.9" />
+  </symbol>
   <symbol id="i-apps" viewBox="0 0 24 24">
     <rect x="3.5" y="3.5" width="7" height="7" rx="1.6" />
     <rect x="13.5" y="3.5" width="7" height="7" rx="1.6" />
@@ -94,11 +98,27 @@
     <!-- 步骤 1 -->
     <div class="onboard__step" data-step="1">
       <h2>它会怎么帮你</h2>
-      <ul class="feature-list">
-        <li><strong>到点自动接管</strong><span>设定的时间一到，自动进入全屏熄灯界面</span></li>
-        <li><strong>提前预告</strong><span>熄灯前 15 分钟弹出倒计时，给你收尾的时间</span></li>
-        <li><strong>助眠音频</strong><span>五类实时合成的白噪音，熄屏也能继续播放</span></li>
-        <li><strong>AI 睡前文案</strong><span>识别周五晚、假期前夜，说一句当下合适的话</span></li>
+      <ul class="feature-grid">
+        <li class="feature-card">
+          <span class="feature-card__icon"><svg><use href="#i-bulb" /></svg></span>
+          <strong>到点自动接管</strong>
+          <span>时间一到，自动进入全屏熄灯界面</span>
+        </li>
+        <li class="feature-card">
+          <span class="feature-card__icon"><svg><use href="#i-clock" /></svg></span>
+          <strong>提前预告</strong>
+          <span>熄灯前弹出倒计时，留出收尾时间</span>
+        </li>
+        <li class="feature-card">
+          <span class="feature-card__icon"><svg><use href="#i-audio" /></svg></span>
+          <strong>助眠音频</strong>
+          <span>五类实时合成的白噪音</span>
+        </li>
+        <li class="feature-card">
+          <span class="feature-card__icon"><svg><use href="#i-sparkles" /></svg></span>
+          <strong>AI 睡前文案</strong>
+          <span>识别周五晚与法定节假日</span>
+        </li>
       </ul>
 
       <div class="notice notice--warn">
@@ -300,6 +320,9 @@
 
 <!-- ══════════ 5. 熄灯黑屏界面（PRD 2.2.2）══════════ -->
 <section class="blackout" id="screen-blackout" hidden>
+  <!-- 极缓慢的呼吸光晕：呼应「灯」的意象，同时填补大面积黑暗带来的空洞感 -->
+  <div class="blackout__ambience" aria-hidden="true"></div>
+
   <div class="blackout__demo" id="blackout-demo" hidden>
     <span>演示模式</span>
     <button type="button" class="link" id="btn-exit-demo">退出演示</button>
@@ -309,6 +332,11 @@
     <time class="blackout__clock" id="blackout-clock">--:--</time>
     <p class="blackout__remaining"><span id="blackout-remaining-prefix">距离本次熄灯结束还有</span> <strong id="blackout-remaining">--</strong></p>
     <p class="blackout__scene" id="blackout-scene"></p>
+
+    <!-- 今夜进度：让"还要熬多久"变成一眼可见的进度，而不是一串需要心算的数字 -->
+    <div class="blackout__progress" aria-hidden="true">
+      <span class="blackout__progress-fill" id="blackout-progress"></span>
+    </div>
   </div>
 
   <figure class="blackout__copy">

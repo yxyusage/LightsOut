@@ -16,6 +16,7 @@ export function createBlackoutView(ctx) {
     remainingPrefix: $("#blackout-remaining-prefix"),
     remaining: $("#blackout-remaining"),
     scene: $("#blackout-scene"),
+    progress: $("#blackout-progress"),
     copy: $("#blackout-copy-text"),
     source: $("#blackout-source"),
     sourceLabel: $("#blackout-source-label"),
@@ -52,6 +53,35 @@ export function createBlackoutView(ctx) {
     }
   });
 
+  /**
+   * 今夜进度。
+   *
+   * 只在"真实处于熄灯时段内"时显示。演示模式下没有真实的时段，
+   * 若仍画一条进度就是编造 —— 宁可隐藏。
+   */
+  function renderProgress(snapshot, ui) {
+    const wrap = els.progress?.parentElement;
+    if (!wrap) return;
+
+    const window = snapshot.window;
+    const isRealActive = !ui.isDemo() && snapshot.phase === core.PHASE.ACTIVE && Boolean(window);
+    if (!isRealActive) {
+      setHidden(wrap, true);
+      return;
+    }
+
+    const totalMs = window.end.getTime() - window.start.getTime();
+    const elapsedMs = snapshot.at.getTime() - window.start.getTime();
+    const ratio = totalMs > 0 ? Math.min(1, Math.max(0, elapsedMs / totalMs)) : 0;
+    elwidth(els.progress, `${(ratio * 100).toFixed(2)}%`);
+    setHidden(wrap, false);
+  }
+
+  /** 只在值真的变化时写入，避免每 250ms 触发一次样式重算 */
+  function elwidth(node, next) {
+    if (node.style.width !== next) node.style.width = next;
+  }
+
   function renderCopy(snapshot) {
     const copy = snapshot.copy;
     if (copy.id === lastCopyId) return;
@@ -86,6 +116,7 @@ export function createBlackoutView(ctx) {
     }
 
     setText(els.scene, `${snapshot.scene.sceneLabel} · ${snapshot.scene.dateKey}`);
+    renderProgress(snapshot, ui);
     renderCopy(snapshot);
 
     const remainingMinutes = Math.ceil(snapshot.whitelistRemainingMs / 60_000);
