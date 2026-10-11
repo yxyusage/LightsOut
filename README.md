@@ -2,7 +2,7 @@
 
 > 到点熄灯，把手机交还给睡眠。
 
-![tests](https://img.shields.io/badge/tests-108%20passing-brightgreen.svg)
+![tests](https://img.shields.io/badge/tests-111%20passing-brightgreen.svg)
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![runtime](https://img.shields.io/badge/runtime-Node%20%E2%89%A518-informational.svg)
 ![dependencies](https://img.shields.io/badge/dependencies-0-success.svg)
@@ -10,6 +10,21 @@
 一款**到点自动接管设备的强制型睡眠辅助工具**。设定的熄灯时间一到，应用自动进入全屏黑屏界面，
 屏蔽娱乐应用、播放助眠音频、用 AI 生成贴合当天的睡前文案，并配合每周限额的紧急解除机制，
 把"想早睡但管不住自己"这件事，从**依赖意志力**变成**依赖机制**。
+
+---
+
+## 立即体验
+
+| | |
+| --- | --- |
+| **在线使用**（无需安装） | <https://yxyusage.github.io/LightsOut/> |
+| **下载 Android APK** | <https://github.com/yxyusage/LightsOut/releases/download/android-latest/app-debug.apk> |
+| 全部发布版本 | <https://github.com/yxyusage/LightsOut/releases> |
+
+> **在线版**：打开后点主页的「立即体验熄灯模式」，不必等到晚上 23:00。
+> 手机浏览器「添加到主屏幕」后可全屏独立运行，断网也能打开。
+>
+> **Android 版**：debug 签名，侧载安装（不能上架商店），能做到 Web 版做不到的系统级接管。
 
 ---
 
@@ -86,11 +101,13 @@
 | --- | --- | --- | --- | --- |
 | **Web / PWA** | `apps/web` | 原生 ES Module | ❌ 不能 | ✅ 已端到端验证（单测 / 静态检查 / 无头浏览器渲染 / 交互链路 / 离线预缓存） |
 | **桌面端** | `platforms/desktop` | Avalonia 11 + .NET 10 | ⚠️ 部分可以（**真全屏置顶** + 前台进程监听） | 见 [该目录 README](platforms/desktop/README.md) |
-| **Android** | `platforms/android` | Kotlin + AndroidX | ✅ 可以（设备管理员 + 无障碍服务 + 前台服务 + 防卸载） | ⚠️ **本环境无 Android SDK 且 Maven Central 不可达，未编译验证** |
+| **Android** | `platforms/android` | Kotlin + AndroidX | ✅ 可以（设备管理员 + 无障碍服务 + 前台服务 + 防卸载） | ✅ **GitHub Actions 已成功构建 Debug APK**，可直接下载安装 |
 
-> Android 端与桌面端都**没有**在本次开发环境中完成编译验证，原因是缺少对应工具链。
-> 两个目录的 README 里都明确标注了这一点，并给出了在具备工具链的环境中构建的步骤。
-> 我们不会把"写了代码"说成"验证通过"。
+> 开发用的那台机器上没有 Android SDK、且 Maven Central 不可达，所以编译这件事**交给了 CI**
+> —— GitHub Actions 的 runner 自带 JDK 与 Android SDK。首次真正编译时暴露了 3 个错误，均已修复。
+>
+> **仍未验证的是「真机运行」**：APK 没有在实体设备上装过，无障碍服务、设备管理员这些
+> 系统级能力只有真机能验。这是目前最明确的一块空白，我们照实标出来。
 
 **Web / PWA 版能保证的是**：熄灯状态本身甩不掉 —— 改系统时间、切走再回来、刷新页面、按返回键，
 都会被立刻拉回熄灯界面；断网也能进入熄灯界面。
@@ -200,6 +217,22 @@ node scripts/serve.mjs dist
 
 部署细节见 [docs/DEPLOY.md](docs/DEPLOY.md)；
 把仓库发布到 GitHub、开启 Pages、拿到公网 URL，见 [docs/PUBLISH-GITHUB.md](docs/PUBLISH-GITHUB.md)。
+
+### 安装 Android 端（可选）
+
+Android 端是唯一能做到**系统级接管**的形态（设备管理员防卸载、无障碍服务拦截前台应用）。
+Debug APK 由 GitHub Actions 在每次构建成功时自动发布，**无需登录即可下载**：
+
+```
+https://github.com/yxyusage/LightsOut/releases/download/android-latest/app-debug.apk
+```
+
+也可以从 [Releases 页面](https://github.com/yxyusage/LightsOut/releases) 或
+[Actions 的构建产物](https://github.com/yxyusage/LightsOut/actions/workflows/build-android.yml) 获取。
+
+> 这是 **debug 签名**的包，**不能上架应用商店**，只能侧载安装。
+> 安装后需要在系统设置里逐项授予无障碍、设备管理员、悬浮窗、电池优化白名单等权限，
+> 具体清单与厂商 ROM 的注意事项见 [platforms/android/README.md](platforms/android/README.md)。
 
 ### 跑测试
 
