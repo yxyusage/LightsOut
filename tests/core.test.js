@@ -646,18 +646,108 @@ describe("audio · 白噪音合成", () => {
     assert.throws(() => generateNoiseSamples({ length: 1.5 }), RangeError);
   });
 
-  test("未知音色报错，而不是产出静默的图", () => {
-    const fakeContext = {
+  /**
+   * 忠实的 AudioContext 假实现。
+   *
+   * 关键在最后一段：**二次调用 start() 会像真实浏览器一样抛错**。
+   * 早先这个假实现把 start() 写成空函数，于是"LFO 在构建阶段被提前启动、
+   * start() 又启动一次"这个真实 bug 完全没有被测试覆盖到 ——
+   * 线上表现就是雨声 / 溪流声 / 海浪声三个音色全部静音。
+   */
+  function createFakeAudioContext() {
+    const started = [];
+    const doubleStarts = [];
+    let counter = 0;
+
+    const param = (value) => ({
+      value,
+      setValueAtTime() {},
+      linearRampToValueAtTime() {},
+      exponentialRampToValueAtTime() {},
+      cancelScheduledValues() {},
+    });
+
+    const base = (kind) => ({
+      __id: kind + "#" + (++counter),
+      __kind: kind,
+      connect(dest) { return dest; },
+      disconnect() {},
+    });
+
+    // 只有真正可调度的节点才有 start()，与真实 Web Audio 一致
+    const startable = (kind) => Object.assign(base(kind), {
+      __startCount: 0,
+      start() {
+        this.__startCount += 1;
+        if (this.__startCount > 1) {
+          doubleStarts.push(this.__id);
+          throw new Error("cannot call start more than once: " + this.__id);
+        }
+        started.push(this.__id);
+      },
+      stop() {},
+    });
+
+    return {
       currentTime: 0,
       sampleRate: 8000,
-      destination: {},
-      createGain: () => ({ gain: { value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {}, cancelScheduledValues() {} }, connect: () => ({}), disconnect() {} }),
+      destination: base("destination"),
+      __started: started,
+      __doubleStarts: doubleStarts,
+      createGain: () => Object.assign(base("gain"), { gain: param(1) }),
       createBuffer: () => ({ copyToChannel() {} }),
-      createBiquadFilter: () => ({ frequency: { value: 0 }, Q: { value: 0 }, connect() {} }),
-      createOscillator: () => ({ frequency: { value: 0 }, type: "", connect: () => ({}), start() {} }),
-      createBufferSource: () => ({ buffer: null, loop: false, connect: () => ({}), start() {}, stop() {} }),
+      createBiquadFilter: () => Object.assign(base("filter"), { frequency: param(0), Q: param(0), type: "" }),
+      createOscillator: () => Object.assign(startable("oscillator"), { frequency: param(0), type: "" }),
+      createBufferSource: () => Object.assign(startable("bufferSource"), { buffer: null, loop: false }),
     };
-    assert.throws(() => buildAudioGraph(fakeContext, "不存在的音色", fakeContext.destination), RangeError);
+  }
+
+  test("未知音色报错，而不是产出静默的图", () => {
+    const fake = createFakeAudioContext();
+    assert.throws(() => buildAudioGraph(fake, "不存在的音色", fake.destination), RangeError);
+  });
+
+  test("五种音色都能构建并启动，且没有任何音源被二次启动", () => {
+    for (const preset of AUDIO_PRESETS) {
+      const fake = createFakeAudioContext();
+      const graph = buildAudioGraph(fake, preset.id, fake.destination);
+      assert.doesNotThrow(() => graph.start(), preset.id + " 启动时不应抛错");
+      assert.equal(
+        fake.__doubleStarts.length,
+        0,
+        preset.id + " 存在被二次启动的音源：" + fake.__doubleStarts.join(","),
+      );
+      assert.ok(fake.__started.length > 0, preset.id + " 应当至少启动一个音源");
+      graph.stop(); // 清掉篝火音的定时器，避免测试进程被挂住
+    }
+  });
+
+  test("用到 LFO 的音色必须把振荡器留给 start() 启动（回归：这三个音色曾全部静音）", () => {
+    for (const id of ["rain", "stream", "waves"]) {
+      const fake = createFakeAudioContext();
+      const graph = buildAudioGraph(fake, id, fake.destination);
+      assert.equal(
+        fake.__started.length,
+        0,
+        id + " 在构建阶段就启动了音源，这会导致 start() 时二次调用并抛错",
+      );
+      graph.start();
+      const oscillators = fake.__started.filter((entry) => entry.indexOf("oscillator") === 0);
+      assert.ok(oscillators.length > 0, id + " 应当启动 LFO 振荡器");
+      assert.equal(new Set(oscillators).size, oscillators.length, id + " 同一个振荡器被启动了多次");
+      graph.stop();
+    }
+  });
+
+  test("同一张图重复 start() 是幂等的", () => {
+    const fake = createFakeAudioContext();
+    const graph = buildAudioGraph(fake, "waves", fake.destination);
+    graph.start();
+    const afterFirst = fake.__started.length;
+    graph.start();
+    assert.equal(fake.__started.length, afterFirst, "重复 start() 不应再启动任何音源");
+    assert.equal(fake.__doubleStarts.length, 0);
+    graph.stop();
   });
 });
 

@@ -101,6 +101,10 @@ export function buildAudioGraph(context, presetId, destination, random = Math.ra
 
   const sources = [];
   const timers = [];
+  /** 篝火音的爆裂循环：延后到 start() 之后再开始排程 */
+  let startCrackles = null;
+  /** 整张音频图只允许启动一次 */
+  let started = false;
 
   function loopSource(type, seconds = 4) {
     const source = context.createBufferSource();
@@ -116,7 +120,11 @@ export function buildAudioGraph(context, presetId, destination, random = Math.ra
     const depthGain = context.createGain();
     depthGain.gain.value = depth;
     lfo.connect(depthGain).connect(target);
-    lfo.start();
+    // ⚠️ 这里绝对不能调 lfo.start()。
+    // 所有音源（噪声缓冲与 LFO 振荡器）统一由 start() 启动；若在此处提前启动，
+    // start() 会对同一个 AudioScheduledSourceNode 二次调用 start() 并抛
+    // InvalidStateError: cannot call start more than once —— 那样整个音色都播不出来。
+    // 这个 bug 曾让「雨声 / 溪流声 / 海浪声」三个用到 LFO 的音色完全静音。
     sources.push(lfo);
     return lfo;
   }
@@ -211,7 +219,7 @@ export function buildAudioGraph(context, presetId, destination, random = Math.ra
         }, delay);
         timers.push(timer);
       };
-      scheduleCrackle();
+      startCrackles = scheduleCrackle;
       break;
     }
 
@@ -221,11 +229,15 @@ export function buildAudioGraph(context, presetId, destination, random = Math.ra
 
   return {
     start() {
-      for (const source of sources) {
-        if (typeof source.start === "function" && !source.__started) {
-          source.start();
-          source.__started = true;
-        }
+      if (started) return;
+      started = true;
+      // 严格模式：不吞异常。任何"同一个源被启动两次"都必须暴露出来，
+      // 而不是被 try/catch 静默成一个"没声音"的用户可见故障。
+      for (const source of sources) source.start();
+      if (startCrackles) {
+        const kick = startCrackles;
+        startCrackles = null;
+        kick();
       }
     },
     stop() {
