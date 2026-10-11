@@ -204,7 +204,7 @@ node scripts/serve.mjs dist
 ### 跑测试
 
 ```bash
-npm test        # 等价于 node --test "tests/**/*.test.js"
+npm test        # 等价于 node --test（自动发现 tests/ 下的用例）
 ```
 
 ### 重新生成图标与封面
