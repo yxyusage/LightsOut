@@ -98,6 +98,16 @@ function isDemo() {
  */
 function effectivePhase(snapshot) {
   if (isDemo()) return core.PHASE.ACTIVE;
+
+  // ⚠️ 首次引导尚未完成时，绝不接管屏幕。
+  //
+  // 默认计划是「已开启 + 23:00–07:00」，也就是说**新用户如果在深夜第一次打开应用，
+  // 会被直接锁进黑屏**：看不到引导页、没机会设置自己的时段，
+  // 而唯一的出口是「连点屏幕 5 次」这种刻意隐藏的入口。
+  // 首次打开就被关起来是很糟糕的第一印象，所以这里显式放行，
+  // 等用户走完引导（onboarded = true）后再按计划接管。
+  if (!settingsStore.value.onboarded) return core.PHASE.OFF;
+
   if (ui.freezeUntil) {
     if (Date.now() < ui.freezeUntil.getTime()) return core.PHASE.ACTIVE;
     ui.freezeUntil = null;
