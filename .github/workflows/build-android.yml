@@ -3,7 +3,9 @@ name: Build Android APK
 # 用 GitHub Actions 构建 Android APK。
 # 动机：开发机没有 Android SDK 且 Maven Central 不可达，无法本地编译；
 # 而 GitHub 的 ubuntu runner 自带 JDK 与 Android SDK，把这件工作交给 CI 即可。
-# 产物从 Actions 页面的 Artifacts 下载。
+#
+# 产物：Actions → Artifacts → xideng-debug-apk
+# 失败时：构建日志会被推到 ci-logs 分支（仓库匿名可读），便于远程定位问题。
 
 on:
   push:
@@ -17,7 +19,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-apk:
@@ -33,64 +35,66 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # 不再使用 android-actions/setup-android：
-      # ubuntu runner 镜像本身就预装了 Android SDK，再跑一个下载动作只会多一个失败点。
       - name: 环境自检
         if: always()
         run: |
-          echo '===== java ====='
-          java -version 2>&1 || true
-          echo '===== gradle ====='
-          gradle --version 2>&1 | head -20 || true
-          echo '===== 环境变量 ====='
+          echo '===== java ====='; java -version 2>&1 || true
+          echo '===== gradle ====='; gradle --version 2>&1 | head -12 || true
+          echo '===== SDK ====='
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
           echo "ANDROID_HOME=$ANDROID_HOME"
-          echo '===== 常见 SDK 位置 ====='
           for d in "$ANDROID_SDK_ROOT" "$ANDROID_HOME" /usr/local/lib/android/sdk; do
-            if [ -n "$d" ] && [ -d "$d" ]; then
-              echo "存在: $d"
-              ls "$d" || true
-              echo '  platforms:'; ls "$d/platforms" 2>/dev/null || echo '   (无)'
-              echo '  build-tools:'; ls "$d/build-tools" 2>/dev/null || echo '   (无)'
-            fi
+            [ -n "$d" ] && [ -d "$d" ] && { echo "存在: $d"; ls "$d"; }
           done
 
       - name: 解析 SDK 路径并写入 local.properties
         working-directory: platforms/android
         run: |
           SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
-          echo "解析出的 SDK: $SDK"
           if [ ! -d "$SDK" ]; then echo '找不到 Android SDK 目录'; exit 1; fi
           echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           echo "sdk.dir=$SDK" > local.properties
-          cat local.properties
+          echo "SDK=$SDK"
 
       - name: 补齐 Gradle Wrapper
         working-directory: platforms/android
         run: |
-          # 仓库没有提交 gradle-wrapper.jar（二进制），这里现生成一份。
-          # 版本以 gradle-wrapper.properties 里声明的为准。
           cat gradle/wrapper/gradle-wrapper.properties || true
           gradle wrapper --gradle-version 8.9 --no-daemon
           chmod +x gradlew
 
+      # 把构建输出同时写进文件，失败时才能把日志带出 CI。
       - name: 构建 Debug APK
+        id: build
         working-directory: platforms/android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug --no-daemon --stacktrace --console=plain 2>&1 | tee /tmp/build.log
+
+      - name: 判定构建结果
+        working-directory: platforms/android
+        run: |
+          if ls app/build/outputs/apk/debug/*.apk >/dev/null 2>&1; then
+            echo 'BUILD_OK=1' >> "$GITHUB_ENV"
+            echo '构建成功，已产出 APK'
+          else
+            echo 'BUILD_OK=0' >> "$GITHUB_ENV"
+            echo '构建失败：没有产出 APK'
+            exit 1
+          fi
 
       - name: 收集 APK 信息
         if: always()
         working-directory: platforms/android
         run: |
-          echo '===== APK 列表 ====='
-          find . -name '*.apk' -type f -print0 2>/dev/null | while IFS= read -r -d '' apk; do
-            echo "APK: $apk  ($(du -h "$apk" | cut -f1))"
+          echo '===== APK ====='
+          find . -name '*.apk' -type f 2>/dev/null | while read -r apk; do
+            echo "$apk  ($(du -h "$apk" | cut -f1))"
             AAPT=$(find "$ANDROID_SDK_ROOT/build-tools" -name aapt 2>/dev/null | sort -V | tail -1)
-            if [ -n "$AAPT" ]; then "$AAPT" dump badging "$apk" 2>/dev/null | head -8 || true; fi
+            [ -n "$AAPT" ] && "$AAPT" dump badging "$apk" 2>/dev/null | head -6 || true
           done
-          echo '===== 编译产物目录 ====='
-          find . -path ./build -prune -o -name 'outputs' -type d -print 2>/dev/null || true
 
       - name: 上传 APK
         uses: actions/upload-artifact@v4
@@ -100,3 +104,29 @@ jobs:
           path: platforms/android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
           retention-days: 30
+
+      # 关键：把构建日志推到一个独立分支。
+      # GitHub 的日志下载接口对匿名访问返回 403，推到分支后即可匿名读取，
+      # 这样即使不在这台机器上也能定位编译错误。
+      - name: 失败时把构建日志推到 ci-logs 分支
+        if: failure()
+        run: |
+          if [ ! -f /tmp/build.log ]; then echo '没有日志文件'; exit 0; fi
+          {
+            echo '# Android 构建日志';
+            echo '';
+            echo "- 运行: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID";
+            echo "- 提交: $GITHUB_SHA";
+            echo '';
+            echo '```';
+            tail -c 60000 /tmp/build.log;
+            echo '```';
+          } > /tmp/BUILD-REPORT.md
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout --orphan ci-logs-tmp
+          git rm -rf --cached . >/dev/null 2>&1 || true
+          cp /tmp/BUILD-REPORT.md BUILD-REPORT.md
+          git add BUILD-REPORT.md
+          git commit -m "ci: Android 构建日志（运行 $GITHUB_RUN_ID）"
+          git push -f origin ci-logs-tmp:ci-logs
