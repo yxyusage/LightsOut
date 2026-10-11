@@ -1,0 +1,86 @@
+name: Build Android APK
+
+# 用 GitHub Actions 构建 Android APK。
+# 动机：这台开发机没有 Android SDK 且 Maven Central 不可达，无法本地编译；
+# 而 GitHub 的 ubuntu runner 自带 JDK 与 Android SDK，能直接把这件工作接过去。
+# 产物可从 Actions 页面的 Artifacts 下载，也会自动发到 Release（打 tag 时）。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'platforms/android/**'
+      - '.github/workflows/build-android.yml'
+  pull_request:
+    paths:
+      - 'platforms/android/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    name: 构建 Debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 准备 Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 环境自检
+        run: |
+          echo '--- java ---'; java -version 2>&1 || true
+          echo '--- gradle ---'; gradle --version 2>&1 | head -20 || true
+          echo '--- ANDROID_SDK_ROOT ---'; echo "$ANDROID_SDK_ROOT"
+          echo '--- sdk platforms ---'; ls "$ANDROID_SDK_ROOT/platforms" 2>/dev/null || true
+          echo '--- sdk build-tools ---'; ls "$ANDROID_SDK_ROOT/build-tools" 2>/dev/null || true
+
+      - name: 补齐 Gradle Wrapper
+        working-directory: platforms/android
+        run: |
+          # 仓库里没有提交 gradle-wrapper.jar（二进制文件），这里现生成一份。
+          # gradle-wrapper.properties 里已经声明了要用的版本。
+          gradle wrapper --gradle-version 8.9 --no-daemon
+          chmod +x gradlew
+          cat gradle/wrapper/gradle-wrapper.properties
+
+      - name: 构建 Debug APK
+        working-directory: platforms/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace --warning-mode all
+
+      - name: 收集 APK 信息
+        if: always()
+        working-directory: platforms/android
+        run: |
+          find . -name '*.apk' -type f | while read -r apk; do
+            echo "找到 APK: $apk  ($(du -h "$apk" | cut -f1))"
+            "$ANDROID_SDK_ROOT/build-tools/"*/aapt dump badging "$apk" 2>/dev/null | head -12 || true
+          done
+
+      - name: 上传 APK
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xideng-debug-apk
+          path: platforms/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: 上传构建日志
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-logs
+          path: |
+            platforms/android/**/build/reports/**
+          if-no-files-found: ignore
+          retention-days: 14
