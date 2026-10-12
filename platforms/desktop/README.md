@@ -49,6 +49,12 @@ dotnet run
 dotnet run -- --selftest
 # 或直接运行已构建的程序集：
 dotnet bin/Debug/net10.0/Xideng.Desktop.dll --selftest
+
+# 启动后立刻进一次熄灯预览（默认 12 秒）：
+# 用来快速查看入场动画与黑屏效果，也便于自动化截图验证。
+# 等价于托盘菜单里的「立即预览熄灯」。
+dotnet run -- --preview
+dotnet run -- --preview 30      # 指定秒数
 ```
 
 自检会把报告同时写到用户数据目录：

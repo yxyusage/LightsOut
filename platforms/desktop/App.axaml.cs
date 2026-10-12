@@ -48,9 +48,42 @@ public partial class App : Application
             // 启动心跳：由相位驱动熄灯窗口的显隐与前台进程监听
             _coordinator.Start();
             settingsWindow.Show();
+
+            // --preview [秒数]：启动后立刻进一次熄灯预览（默认 12 秒）。
+            // 等价于托盘菜单里的「立即预览熄灯」，但可以从命令行/脚本触发，
+            // 便于快速查看入场动画与黑屏效果，也便于自动化截图验证。
+            var previewSeconds = PreviewSeconds(desktop.Args);
+            if (previewSeconds > 0)
+            {
+                _coordinator.StartBlackoutPreview(TimeSpan.FromSeconds(previewSeconds));
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// 解析 <c>--preview [秒数]</c>。未指定时返回 0（不预览）；
+    /// 只写 <c>--preview</c> 不带数字时默认 12 秒。
+    /// </summary>
+    private static double PreviewSeconds(string[]? args)
+    {
+        if (args is null) return 0;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            if (!string.Equals(args[index], "--preview", StringComparison.OrdinalIgnoreCase)) continue;
+            if (index + 1 < args.Length
+                && double.TryParse(args[index + 1], System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var seconds)
+                && seconds > 0)
+            {
+                return seconds;
+            }
+            return 12;
+        }
+
+        return 0;
     }
 
     /// <summary>系统托盘：图标 + 右键菜单 + 左键唤起设置。</summary>

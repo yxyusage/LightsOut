@@ -261,9 +261,24 @@ describe("schedule · 睡眠计划与相位", () => {
     assert.deepEqual(validateWindow({ start: "23:00", end: "07:00" }), []);
     assert.equal(validateWindow({ start: "23:00", end: "23:00" }).length, 1);
     assert.ok(validateWindow({ start: "23:55", end: "00:05" })[0].includes("30 分钟"));
-    // 白天的非跨午夜时段必须被拒（熄灯本质是"晚上睡到早上"）
-    assert.ok(validateWindow({ start: "07:00", end: "12:00" })[0].includes("跨越午夜"));
+    // 白天开始的非跨午夜时段必须被拒（熄灯本质是"晚上睡到早上"）
+    assert.ok(validateWindow({ start: "07:00", end: "12:00" })[0].includes("夜间"));
     assert.ok(validateWindow({ start: "abc", end: "07:00" }).length > 0);
+  });
+
+  test("validateWindow 放行凌晨开始的时段（回归：曾经全部被误判为非法）", () => {
+    // 00:30 → 07:00 虽然不跨午夜，但同样属于"凌晨睡到早上"，是正常配置。
+    // 早先的判定把"不跨午夜"和"白天时段"混为一谈，把这些全判成非法 ——
+    // 引擎其实能正常工作，但用户在设置页会看到一个错误的报错。
+    const legal = [["00:30", "07:00"], ["01:00", "08:00"], ["00:00", "07:00"], ["05:00", "09:00"]];
+    for (const [start, end] of legal) {
+      assert.deepEqual(validateWindow({ start, end }), [], `${start} → ${end} 应当被放行`);
+    }
+    // 白天开始的时段依然要被拦下
+    const illegal = [["09:00", "11:00"], ["06:00", "12:00"], ["13:00", "15:00"]];
+    for (const [start, end] of illegal) {
+      assert.ok(validateWindow({ start, end }).length > 0, `${start} → ${end} 应当被拒绝`);
+    }
   });
 });
 

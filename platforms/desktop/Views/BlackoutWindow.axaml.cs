@@ -40,7 +40,10 @@ public partial class BlackoutWindow : Window
     private double _dragStartY;
     private double _pullOffset;
     private const double PullMaxOffset = 120.0;   // 拉到底的位移阈值（DIP）
-    private const int PullTimeoutSeconds = 60;    // 60 秒不拉 → 灯自动熄灭（PRD 增强）
+    // 不拉绳时的兜底：10 秒后灯自动熄灭。
+    // PRD 4.3 写的入场动画是"约 1.5 秒"，拉绳是为仪式感加的一步 ——
+    // 但兜底必须短，否则用户会盯着倒计时干等，把仪式感变成卡顿。
+    private const int PullTimeoutSeconds = 10;
     private DispatcherTimer? _pullTimer;           // 60 秒超时倒计时
     private int _pullSecondsLeft;
     private DispatcherTimer? _snapTimer;           // 未拉到底时的回弹动画

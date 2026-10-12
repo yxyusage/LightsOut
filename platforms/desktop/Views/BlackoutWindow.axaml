@@ -25,13 +25,38 @@
       </Border.Background>
     </Border>
 
-    <!-- 入场 / 退场动画：垂下的灯绳与灯泡 -->
+    <!-- 入场 / 退场动画：垂下的灯绳与灯泡（线性描边风格，与 Web 版保持一致） -->
+    <!--
+      这里刻意**不**用实心圆。
+      PRD 4.2 要求"简约线性风格"：灯泡是一个只描边的圆，内部留空、只留一层柔和暖光，
+      渐灭时才像"灯丝一点点暗下去"；换成实心白圆就成了一坨奶白色块在淡出。
+    -->
     <Grid x:Name="LampLayer"
           HorizontalAlignment="Center"
           VerticalAlignment="Center"
-          RowDefinitions="Auto,Auto">
-      <Rectangle x:Name="Cord" Grid.Row="0" Width="2" Height="170" Fill="#4A4A4A" HorizontalAlignment="Center" />
-      <Ellipse x:Name="Bulb" Grid.Row="1" Width="98" Height="98" Fill="#FFF3C4" HorizontalAlignment="Center" />
+          RowDefinitions="Auto,Auto,Auto,Auto">
+      <!-- 悬挂绳 -->
+      <Rectangle x:Name="Cord" Grid.Row="0" Width="2" Height="148" Fill="#8A6A3A" HorizontalAlignment="Center" />
+      <!-- 拉环 -->
+      <Ellipse x:Name="Ring" Grid.Row="1" Width="30" Height="30"
+               Stroke="#E0B67E" StrokeThickness="3"
+               HorizontalAlignment="Center" Margin="0,2,0,6" />
+      <!-- 方形灯座 -->
+      <Border x:Name="Base" Grid.Row="2" Width="52" Height="17" CornerRadius="5"
+              BorderBrush="#E0B67E" BorderThickness="3" Background="Transparent"
+              HorizontalAlignment="Center" Margin="0,0,0,4" />
+      <!-- 灯泡本体：只描边，内部用一层由内向外的暖光暗示"亮着" -->
+      <Ellipse x:Name="Bulb" Grid.Row="3" Width="98" Height="98"
+               Stroke="#FFD08A" StrokeThickness="5"
+               HorizontalAlignment="Center" Margin="0,2,0,0">
+        <Ellipse.Fill>
+          <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+            <GradientStop Offset="0" Color="#5CFFD08A" />
+            <GradientStop Offset="0.65" Color="#1FFFD08A" />
+            <GradientStop Offset="1" Color="#00FFD08A" />
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
     </Grid>
 
     <!-- 黑屏主界面（PRD 2.2.2） -->

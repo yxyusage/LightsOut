@@ -33,11 +33,18 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
   /** AI 生成的文案，优先级高于本地轮播 */
   let aiText = null;
 
-  // ── 忘记密码兜底（PRD 增强）：等待 24 小时重置密码与本周额度 ──
+  // ── 忘记密码兜底（PRD 增强）：等待 24 小时后重置密码 ──
 
   /**
-   * 惰性结算：若重置申请已过 24 小时冷却，则清空密码、重置本周额度、清除申请。
+   * 惰性结算：若重置申请已过 24 小时冷却，则清空密码并清除申请。
    * 在快照与解除入口处都会被调用，保证"到期即生效"不依赖额外定时器。
+   *
+   * ⚠️ 这里**刻意不动每周额度**。
+   * 早先的实现顺带调了 `quotaStore.reset(at)`，等于每 24 小时白送 2 次紧急解除，
+   * 把 PRD 2.1.3 的「每周 2 次」从 2 次/周放大到约 14 次/周，这条机制被彻底架空
+   * ——「防止靠重置免费越狱」的设计反而自己开了后门。
+   * 忘记密码只是拿回「设置新密码」的能力，额度该扣的已经扣了。
+   *
    * @returns {boolean} 是否刚完成了一次结算。
    */
   function settlePasswordReset(at) {
@@ -46,7 +53,6 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
     if (at.getTime() - requestedAt < PASSWORD_RESET_COOLDOWN_MS) return false;
 
     settingsStore.update({ emergency: { passwordResetAt: null, passwordHash: "" } });
-    quotaStore.reset(at);
     return true;
   }
 
@@ -170,10 +176,7 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
      */
     async emergencyUnlock(password) {
       const settings = settingsStore.value;
-
       const at = now();
-      // 重置冷却期间禁止解除（否则"忘记密码"就成了免费越狱通道）
-      if (passwordResetInfo(at).pending) return { ok: false, reason: "reset-pending" };
 
       if (!settings.emergency.passwordHash) return { ok: false, reason: "no-password" };
 
@@ -186,6 +189,15 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
 
       const valid = await verifyPassword(password, settings.emergency.passwordHash);
       if (!valid) return { ok: false, reason: "bad-password" };
+
+      // 密码正确 → 说明用户其实记得密码，顺带撤销可能存在的重置申请。
+      //
+      // ⚠️ 早先把 pending 检查放在密码校验**之前**，导致误点「忘记密码」的用户
+      // 即使密码记得清清楚楚也要干等 24 小时，而且没有任何取消入口。
+      // 现在的顺序是：先验密码，验过了就把申请撤掉。
+      if (settingsStore.value.emergency?.passwordResetAt) {
+        settingsStore.update({ emergency: { passwordResetAt: null } });
+      }
 
       const consumed = quotaStore.consume(at);
       if (!consumed.ok) return { ok: false, reason: "quota-exhausted" };
@@ -200,7 +212,7 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
       dismissedWindowKey = null;
     },
 
-    /** 忘记密码：申请 24 小时后重置密码与本周额度 */
+    /** 忘记密码：申请 24 小时后重置密码（不影响每周额度） */
     requestPasswordReset() {
       return requestPasswordReset(now());
     },

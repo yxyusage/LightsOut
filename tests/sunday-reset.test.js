@@ -13,6 +13,7 @@ import {
   createQuotaStore,
   createSettingsStore,
   dayTypeOf,
+  hashPassword,
   PASSWORD_RESET_COOLDOWN_MS,
   phaseAt,
 } from "../packages/core/src/index.js";
@@ -78,17 +79,34 @@ describe("engine · 忘记密码 24 小时重置冷却", () => {
     return { settingsStore, quotaStore, engine };
   }
 
-  test("申请重置后进入冷却，期间无法紧急解除", async () => {
-    const { settingsStore, quotaStore, engine } = makeEngine();
-    settingsStore.update({ plan: { enabled: true }, emergency: { quotaTotal: 2 } });
+  test("申请重置期间：密码错误仍被拒，密码正确则解除并撤销申请", async () => {
+    // 回归：早先把 pending 检查放在密码校验**之前**，导致误点「忘记密码」的用户
+    // 即使密码记得清清楚楚也要干等 24 小时，而且没有任何取消入口。
+    // 正确行为是：先验密码，验过了就把重置申请撤掉。
+    const settingsStore = createSettingsStore({ storage: createMemoryStorage() });
+    const passwordHash = await hashPassword("1234");
+    settingsStore.update({
+      plan: { enabled: true, sundayAsWeekday: true, windows: { weekday: { start: "22:00", end: "07:00" }, weekend: { start: "01:00", end: "07:00" } } },
+      emergency: { passwordHash, quotaTotal: 2 },
+    });
+    const quotaStore = createQuotaStore({ storage: settingsStore.storage });
     // 2026-10-12 是周一，22:00–07:00 时段生效
+    const engine = createEngine({ settingsStore, quotaStore, now: () => at(2026, 10, 12, 23, 30) });
+
     const info = engine.requestPasswordReset();
     assert.equal(info.pending, true);
     assert.equal(info.remainingMs, PASSWORD_RESET_COOLDOWN_MS);
 
-    const result = await engine.emergencyUnlock("wrong");
-    assert.equal(result.ok, false);
-    assert.equal(result.reason, "reset-pending");
+    // 密码错误 → 被拒，且申请仍然保留（不能靠乱试密码把申请刷掉）
+    const wrong = await engine.emergencyUnlock("0000");
+    assert.equal(wrong.ok, false);
+    assert.equal(wrong.reason, "bad-password");
+    assert.equal(engine.passwordResetInfo().pending, true);
+
+    // 密码正确 → 解除成功，并顺带撤销重置申请
+    const right = await engine.emergencyUnlock("1234");
+    assert.equal(right.ok, true);
+    assert.equal(engine.passwordResetInfo().pending, false);
   });
 
   test("冷却期内重复申请不重置计时", () => {
@@ -99,7 +117,7 @@ describe("engine · 忘记密码 24 小时重置冷却", () => {
     assert.equal(again.remainingMs, PASSWORD_RESET_COOLDOWN_MS);
   });
 
-  test("冷却到期后自动清空密码并重置本周额度", () => {
+  test("冷却到期后只清空密码，不碰每周额度（回归：额度曾被刷满）", () => {
     const { settingsStore, quotaStore, engine } = makeEngine();
     settingsStore.update({ plan: { enabled: false } });
 
@@ -118,8 +136,10 @@ describe("engine · 忘记密码 24 小时重置冷却", () => {
     assert.equal(info.pending, false);
     assert.equal(settingsStore.value.emergency.passwordHash, "");
     assert.equal(settingsStore.value.emergency.passwordResetAt, null);
-    // 本周额度已被重置回满
-    assert.equal(quotaStore.remaining(at(2026, 10, 12, 23, 30)), 2);
+    // 关键断言：额度**没有**被刷回去。
+    // 早先 settlePasswordReset 顺带调了 quotaStore.reset，等于每 24 小时白送 2 次解除，
+    // 把 PRD 2.1.3 的「每周 2 次」从 2 次/周放大到约 14 次/周，机制被架空。
+    assert.equal(quotaStore.remaining(at(2026, 10, 12, 23, 30)), 1);
   });
 
   test("正常快照包含 passwordReset 状态", () => {

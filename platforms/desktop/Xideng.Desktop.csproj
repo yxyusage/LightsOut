@@ -27,12 +27,13 @@
 
   <ItemGroup>
     <AvaloniaResource Include="assets\tray.png" />
-    <AvaloniaResource Include="assets\backgrounds\bg-aurora-1.png" />
-    <AvaloniaResource Include="assets\backgrounds\bg-aurora-2.png" />
-    <AvaloniaResource Include="assets\backgrounds\bg-star-1.png" />
-    <AvaloniaResource Include="assets\backgrounds\bg-star-2.png" />
-    <AvaloniaResource Include="assets\backgrounds\bg-star-3.png" />
-    <AvaloniaResource Include="assets\backgrounds\bg-firefly-1.png" />
+    <!-- 背景图用 JPEG：均为 RGB 无透明通道的照片类内容，PNG 存它们体积大得多 -->
+    <AvaloniaResource Include="assets\backgrounds\bg-aurora-1.jpg" />
+    <AvaloniaResource Include="assets\backgrounds\bg-aurora-2.jpg" />
+    <AvaloniaResource Include="assets\backgrounds\bg-star-1.jpg" />
+    <AvaloniaResource Include="assets\backgrounds\bg-star-2.jpg" />
+    <AvaloniaResource Include="assets\backgrounds\bg-star-3.jpg" />
+    <AvaloniaResource Include="assets\backgrounds\bg-firefly-1.jpg" />
     <AvaloniaResource Include="assets\audio\click.wav" />
     <AvaloniaResource Include="assets\audio\rain.wav" />
     <AvaloniaResource Include="assets\audio\waves.wav" />

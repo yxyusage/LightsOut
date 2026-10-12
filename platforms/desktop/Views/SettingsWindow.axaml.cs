@@ -24,12 +24,14 @@ public partial class SettingsWindow : Window
     private static readonly (string Id, string Name, string? Uri)[] BackgroundOptions =
     [
         ("dark", "深色（默认）", null),
-        ("bg-aurora-1", "极光 · 水面倒影", "avares://Xideng.Desktop/assets/backgrounds/bg-aurora-1.png"),
-        ("bg-aurora-2", "极光 · 蓝紫渐变", "avares://Xideng.Desktop/assets/backgrounds/bg-aurora-2.png"),
-        ("bg-star-1", "星空 · 银河核心", "avares://Xideng.Desktop/assets/backgrounds/bg-star-1.png"),
-        ("bg-star-2", "星空 · 银河横跨", "avares://Xideng.Desktop/assets/backgrounds/bg-star-2.png"),
-        ("bg-star-3", "星空 · 密集繁星", "avares://Xideng.Desktop/assets/backgrounds/bg-star-3.png"),
-        ("bg-firefly-1", "萤火虫 · 森林", "avares://Xideng.Desktop/assets/backgrounds/bg-firefly-1.png"),
+        // 背景图用 JPEG 而非 PNG：这些图全是 RGB 无透明通道、且是照片类内容，
+        // PNG 存它们效率极低（最有代表性的一张 2.7 MB，转 JPEG 后 0.8 MB，观感无差别）。
+        ("bg-aurora-1", "极光 · 水面倒影", "avares://Xideng.Desktop/assets/backgrounds/bg-aurora-1.jpg"),
+        ("bg-aurora-2", "极光 · 蓝紫渐变", "avares://Xideng.Desktop/assets/backgrounds/bg-aurora-2.jpg"),
+        ("bg-star-1", "星空 · 银河核心", "avares://Xideng.Desktop/assets/backgrounds/bg-star-1.jpg"),
+        ("bg-star-2", "星空 · 银河横跨", "avares://Xideng.Desktop/assets/backgrounds/bg-star-2.jpg"),
+        ("bg-star-3", "星空 · 密集繁星", "avares://Xideng.Desktop/assets/backgrounds/bg-star-3.jpg"),
+        ("bg-firefly-1", "萤火虫 · 森林", "avares://Xideng.Desktop/assets/backgrounds/bg-firefly-1.jpg"),
     ];
 
     /// <summary>供 XAML 设计器 / 加载器使用。</summary>

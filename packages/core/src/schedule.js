@@ -10,6 +10,12 @@
 
 import { DAY_TYPE, PHASE } from "./constants.js";
 import { isMakeupWorkday } from "./holidays.js";
+
+/**
+ * 夜间结束时刻（早上 6 点）。
+ * 在它之前开始的时段，即使不跨午夜也依然属于"夜间熄灯"（如 00:30 → 07:00）。
+ */
+const NIGHT_END_MINUTES = 6 * 60;
 import {
   MINUTES_PER_DAY,
   MS_MINUTE,
@@ -180,10 +186,15 @@ export function validateWindow({ start, end }) {
     return problems;
   }
 
-  // 熄灯模式必须是"晚上睡到早上"：结束时间必须早于开始时间（跨越午夜）。
-  // 白天的时段（如 07:00→12:00）不符合产品语义，直接判非法。
-  if (endMinutes > startMinutes) {
-    problems.push("熄灯时段必须跨越午夜（结束时间应早于开始时间，如 23:00 → 次日 07:00）");
+  // 熄灯模式的语义是"晚上睡到早上"。不跨午夜的时段里，**只有从凌晨开始的才合法**
+  // —— 00:30 → 07:00 同样是"凌晨睡到早上"，是很正常的配置。
+  //
+  // ⚠️ 早先这里只写了 `endMinutes > startMinutes`，把"不跨午夜"和"白天时段"混为一谈，
+  // 导致 00:30→07:00、01:00→08:00、00:00→07:00 这些完全合法的配置被误判为非法
+  // （引擎其实能正常工作，但设置页会弹错误的报错）。
+  // 现在只有【从白天开始】的不跨午夜时段才判非法，如 09:00→11:00、07:00→12:00。
+  if (endMinutes > startMinutes && startMinutes >= NIGHT_END_MINUTES) {
+    problems.push("熄灯时段应覆盖夜间（如 23:00 → 次日 07:00，或 00:30 → 07:00）");
     return problems;
   }
 

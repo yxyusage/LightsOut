@@ -88,11 +88,13 @@ def draw_translucent(canvas, painter):
 
 
 def render_lamp(size, inset=0.0, transparent=False):
-    """V6（定稿方向）：旧版灯泡原样，右侧加一根独立拉绳。
+    """带拉绳的灯泡。
 
-    灯泡本体 = 旧版（顶部悬挂绳 + 圆环 + 方形连接件 + 正圆球体，竖居中细线）；
-    拉绳 = 右侧独立一根，顶端与灯泡顶部同高（都"吸在顶部"），末端小圆坠。
-    灯泡整体略左移，保持整图居中平衡。
+    灯泡本体（顶部悬挂绳 + 圆环 + 方形连接件 + 正圆球体）沿用原设计；
+    右侧拉绳**从灯座伸出**再垂下，末端小圆坠 —— 这样它才像"这盏灯的拉绳"。
+
+    ⚠️ 拉绳必须与灯泡本体相连。早先它是一根与灯泡毫无接触的悬空竖线，
+    读起来像渲染残留而不是设计元素，在 64px 的 favicon 上更是只剩一道噪点。
     """
     big = size * SUPERSAMPLE
     background = (0, 0, 0, 0) if transparent else (0, 0, 0, 255)
@@ -100,8 +102,9 @@ def render_lamp(size, inset=0.0, transparent=False):
 
     s = 1.0 - inset
     cx = big / 2.0
-    # 灯泡整体左移，给右侧拉绳留出空间（整图仍居中）
-    bulb_cx = cx - big * 0.065 * s
+    # 灯泡略左移，把右侧空间让给拉绳；位移量按"整组内容的视觉包围盒"估算，
+    # 而不是简单对半分 —— 细拉绳的视觉重量远小于灯泡。
+    bulb_cx = cx - big * 0.045 * s
 
     # 极淡光晕：只让球体有"亮着"的暗示（沿用旧版做法，克制）
     canvas = Image.alpha_composite(
@@ -151,20 +154,30 @@ def render_lamp(size, inset=0.0, transparent=False):
         width=stroke,
     )
 
-    # ── 右侧独立拉绳（顶端与灯泡顶部同高，末端小圆坠）──
-    # 拉绳长度 = 整体结构高 × 0.618（黄金分割长段）≈ 0.475 → 绳尾 y≈0.525
-    # 悬挂绳 : 拉绳 = 0.382 : 0.618 = 0.618（黄金比）
-    cord_x = cx + big * 0.205 * s
-    cord_y0 = big * 0.05
-    cord_y1 = big * 0.525 * s
-    draw.line([(cord_x, cord_y0), (cord_x, cord_y1)], fill=CORD + (255,), width=thin)
+    # ── 拉绳：从灯座右缘伸出 → 斜向右下 → 垂直垂下 → 圆坠 ──
+    # 起点取灯座右缘再往里缩一个 stroke，让绳头插进灯座描边内部，看不出接缝。
+    base_right = bulb_cx + base_w / 2
+    base_mid_y = base_top + base_h / 2
+    # 拉绳到球心的水平距离必须让珠子**完全避开**球体轮廓：
+    #   珠左缘 = cord_x − bead_r 要大于 bulb_r(0.150)，
+    #   否则珠子会压在灯泡边上，小尺寸下糊成一团。
+    cord_x = bulb_cx + big * 0.222 * s
+    cord_knee_y = base_mid_y + big * 0.048 * s
+    cord_tail_y = big * 0.685 * s
+
+    draw.line(
+        [(base_right - stroke, base_mid_y), (cord_x, cord_knee_y)],
+        fill=CORD + (255,),
+        width=thin,
+    )
+    draw.line([(cord_x, cord_knee_y), (cord_x, cord_tail_y)], fill=CORD + (255,), width=thin)
+
+    # 末端圆坠
     bead_r = big * 0.024 * s
-    bead_y = cord_y1 + big * 0.022 * s
+    bead_y = cord_tail_y + bead_r * 1.25
     draw.ellipse(
         [cord_x - bead_r, bead_y - bead_r, cord_x + bead_r, bead_y + bead_r],
         fill=LAMP_SOFT + (255,),
-        outline=LAMP_SOFT + (255,),
-        width=thin,
     )
 
     return canvas.resize((size, size), Image.LANCZOS)
