@@ -260,7 +260,9 @@ describe("schedule · 睡眠计划与相位", () => {
   test("validateWindow 拦住常见错误配置", () => {
     assert.deepEqual(validateWindow({ start: "23:00", end: "07:00" }), []);
     assert.equal(validateWindow({ start: "23:00", end: "23:00" }).length, 1);
-    assert.ok(validateWindow({ start: "23:00", end: "23:10" })[0].includes("30 分钟"));
+    assert.ok(validateWindow({ start: "23:55", end: "00:05" })[0].includes("30 分钟"));
+    // 白天的非跨午夜时段必须被拒（熄灯本质是"晚上睡到早上"）
+    assert.ok(validateWindow({ start: "07:00", end: "12:00" })[0].includes("跨越午夜"));
     assert.ok(validateWindow({ start: "abc", end: "07:00" }).length > 0);
   });
 });

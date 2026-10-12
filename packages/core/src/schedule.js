@@ -180,6 +180,13 @@ export function validateWindow({ start, end }) {
     return problems;
   }
 
+  // 熄灯模式必须是"晚上睡到早上"：结束时间必须早于开始时间（跨越午夜）。
+  // 白天的时段（如 07:00→12:00）不符合产品语义，直接判非法。
+  if (endMinutes > startMinutes) {
+    problems.push("熄灯时段必须跨越午夜（结束时间应早于开始时间，如 23:00 → 次日 07:00）");
+    return problems;
+  }
+
   const durationMinutes = (endMinutes - startMinutes + MINUTES_PER_DAY) % MINUTES_PER_DAY;
   if (durationMinutes < 30) problems.push("熄灯时段不应短于 30 分钟");
   if (durationMinutes > 16 * 60) problems.push("熄灯时段不宜长于 16 小时");

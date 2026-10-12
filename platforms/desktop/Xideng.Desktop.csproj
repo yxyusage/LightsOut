@@ -33,6 +33,10 @@
     <AvaloniaResource Include="assets\backgrounds\bg-star-2.png" />
     <AvaloniaResource Include="assets\backgrounds\bg-star-3.png" />
     <AvaloniaResource Include="assets\backgrounds\bg-firefly-1.png" />
+    <AvaloniaResource Include="assets\audio\click.wav" />
+    <AvaloniaResource Include="assets\audio\rain.wav" />
+    <AvaloniaResource Include="assets\audio\waves.wav" />
+    <AvaloniaResource Include="assets\audio\stream.wav" />
   </ItemGroup>
 
 </Project>

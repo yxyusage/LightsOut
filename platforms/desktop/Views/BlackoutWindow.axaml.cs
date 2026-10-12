@@ -5,6 +5,7 @@ using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Xideng.Desktop.Core;
+using Xideng.Desktop.Platform;
 
 namespace Xideng.Desktop.Views;
 
@@ -59,8 +60,8 @@ public partial class BlackoutWindow : Window
 
         WhitelistButton.Click += (_, _) => ToggleWhitelistPanel();
         WhitelistCloseButton.Click += (_, _) => WhitelistPanel.IsVisible = false;
-        AudioButton.Click += (_, _) => ShowNotice(
-            "桌面端尚未实现助眠音频播放（PRD 2.3）。该能力目前在 Web/PWA 端通过 Web Audio 实时合成提供。");
+        AudioButton.Click += (_, _) => ToggleAudioPanel();
+        AudioCloseButton.Click += (_, _) => AudioPanel.IsVisible = false;
         SettingsButton.Click += (_, _) => _coordinator?.ShowSettings();
         EmergencyCancelButton.Click += (_, _) => EmergencyPanel.IsVisible = false;
         EmergencyConfirmButton.Click += (_, _) => ConfirmEmergencyUnlock();
@@ -309,13 +310,15 @@ public partial class BlackoutWindow : Window
         StartAnimation(entrance: true);
     }
 
-    /// <summary>退出熄灯：播放退场动画后隐藏窗口。</summary>
+    /// <summary>退出熄灯：停止助眠音频，播放退场动画后隐藏窗口。</summary>
     public void BeginExitAndHide()
     {
         if (!IsVisible)
         {
             return;
         }
+
+        AudioService.Stop();
 
         // 退场动画已在播放时不要重启
         if (_animTimer is not null && !_entrance)
@@ -333,7 +336,7 @@ public partial class BlackoutWindow : Window
         _brightness = Math.Clamp(snapshot.Settings.Blackout.Brightness, 0.15, 1);
 
         ClockText.Text = TimeUtil.FormatClock(snapshot.At, seconds: true);
-        RemainingText.Text = $"距离熄灯结束还有 {TimeUtil.FormatDurationCn(snapshot.RemainingMs)}";
+        RemainingText.Text = $"现在睡，还能睡 {TimeUtil.FormatDurationCn(snapshot.RemainingMs)}";
         SceneTag.Text = $"{snapshot.Scene.SceneLabel} · {snapshot.Scene.WeekdayName} · {snapshot.Scene.TimeBucketLabel}";
         QuotaText.Text = $"本周剩余紧急解除 {snapshot.Quota.Remaining} / {snapshot.Quota.Total} 次";
 
@@ -449,6 +452,59 @@ public partial class BlackoutWindow : Window
                 MaxWidth = 520,
             });
         }
+    }
+
+    // ── 助眠音频（PRD 2.3）──────────────────────────────────
+
+    private void ToggleAudioPanel()
+    {
+        AudioPanel.IsVisible = !AudioPanel.IsVisible;
+        if (AudioPanel.IsVisible)
+        {
+            RefreshAudioPanel();
+        }
+    }
+
+    private void RefreshAudioPanel()
+    {
+        AudioPresetButtons.Children.Clear();
+
+        foreach (var (id, name, _) in AudioService.Presets)
+        {
+            var presetId = id;
+            var isCurrent = string.Equals(AudioService.CurrentPresetId, presetId, StringComparison.Ordinal);
+            var button = new Button
+            {
+                Content = (isCurrent ? "▶ " : "") + name,
+                Padding = new Thickness(18, 9),
+                Background = isCurrent ? new SolidColorBrush(Color.Parse("#2E2E2E")) : null,
+            };
+            button.Click += (_, _) => PlayPreset(presetId);
+            AudioPresetButtons.Children.Add(button);
+        }
+
+        var stopButton = new Button { Content = "停止", Padding = new Thickness(18, 9) };
+        stopButton.Click += (_, _) =>
+        {
+            AudioService.Stop();
+            AudioHint.Text = "已停止播放。";
+            RefreshAudioPanel();
+        };
+        AudioPresetButtons.Children.Add(stopButton);
+
+        AudioHint.Text = AudioService.CurrentPresetId is null
+            ? "选择一种声音循环播放助眠；熄灯期间可随时停止。退出熄灯时自动停止。"
+            : "正在循环播放，选择其他声音可直接切换。";
+    }
+
+    private void PlayPreset(string presetId)
+    {
+        var preset = AudioService.Presets.FirstOrDefault(item => item.Id == presetId);
+        var ok = AudioService.Play(presetId);
+        AudioHint.Text = ok
+            ? $"正在播放：{preset.Name}（循环）。"
+            : "播放失败：音频资源不可用。";
+        RefreshAudioPanel();
     }
 
     // ── 紧急解除 ────────────────────────────────────────────

@@ -225,9 +225,13 @@ public static class SelfTest
 
         h.Check("validateWindow(23:00-07:00) 无问题", ScheduleEngine.ValidateWindow("23:00", "07:00").Count == 0);
         h.Eq("validateWindow(23:00-23:00) 报 1 个问题", 1, ScheduleEngine.ValidateWindow("23:00", "23:00").Count);
-        var tooShort = ScheduleEngine.ValidateWindow("23:00", "23:10");
-        h.Check("validateWindow(23:00-23:10) 提示不短于 30 分钟",
+        var tooShort = ScheduleEngine.ValidateWindow("23:55", "00:05");
+        h.Check("validateWindow(23:55-00:05) 提示不短于 30 分钟",
             tooShort.Count > 0 && tooShort[0].Contains("30 分钟", StringComparison.Ordinal));
+        // 白天的非跨午夜时段必须被拒（熄灯本质是"晚上睡到早上"）
+        var daytime = ScheduleEngine.ValidateWindow("07:00", "12:00");
+        h.Check("validateWindow(07:00-12:00) 提示必须跨越午夜",
+            daytime.Count > 0 && daytime[0].Contains("跨越午夜", StringComparison.Ordinal));
         h.Check("validateWindow(abc-07:00) 报格式问题", ScheduleEngine.ValidateWindow("abc", "07:00").Count > 0);
 
         // 工作日 / 周末两套时段必须相互独立

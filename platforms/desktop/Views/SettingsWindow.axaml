@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:Xideng.Desktop.Views"
         x:Class="Xideng.Desktop.Views.SettingsWindow"
         Title="熄灯早睡 · 设置"
         Icon="avares://Xideng.Desktop/assets/tray.png"
@@ -21,15 +22,17 @@
       <TabItem Header="睡眠计划">
         <StackPanel Margin="6,14,6,6" Spacing="12">
           <CheckBox x:Name="PlanEnabledCheck" Content="启用熄灯计划" />
-          <Grid ColumnDefinitions="96,150,150" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10">
-            <TextBlock Grid.Row="0" Grid.Column="1" Text="开始 HH:MM" Foreground="#9A9A9A" FontSize="12" />
-            <TextBlock Grid.Row="0" Grid.Column="2" Text="结束 HH:MM" Foreground="#9A9A9A" FontSize="12" />
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="工作日" VerticalAlignment="Center" Foreground="#CCCCCC" />
-            <TextBox Grid.Row="1" Grid.Column="1" x:Name="WeekdayStartBox" Width="130" HorizontalAlignment="Left" />
-            <TextBox Grid.Row="1" Grid.Column="2" x:Name="WeekdayEndBox" Width="130" HorizontalAlignment="Left" />
-            <TextBlock Grid.Row="2" Grid.Column="0" Text="周末" VerticalAlignment="Center" Foreground="#CCCCCC" />
-            <TextBox Grid.Row="2" Grid.Column="1" x:Name="WeekendStartBox" Width="130" HorizontalAlignment="Left" />
-            <TextBox Grid.Row="2" Grid.Column="2" x:Name="WeekendEndBox" Width="130" HorizontalAlignment="Left" />
+          <Grid ColumnDefinitions="96,88,88" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12">
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="开始（滚轮选择）" Foreground="#9A9A9A" FontSize="11" />
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="结束（滚轮选择）" Foreground="#9A9A9A" FontSize="11" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="工作日" VerticalAlignment="Top" Margin="0,34,0,0" Foreground="#CCCCCC" />
+            <views:TimeWheel Grid.Row="1" Grid.Column="1" x:Name="WeekdayStartWheel" />
+            <views:TimeWheel Grid.Row="1" Grid.Column="2" x:Name="WeekdayEndWheel" />
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="周末" VerticalAlignment="Top" Margin="0,34,0,0" Foreground="#CCCCCC" />
+            <views:TimeWheel Grid.Row="2" Grid.Column="1" x:Name="WeekendStartWheel" />
+            <views:TimeWheel Grid.Row="2" Grid.Column="2" x:Name="WeekendEndWheel" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="熄灯时段必须跨越午夜（如 23:00 → 次日 07:00），时长 30 分钟 – 16 小时。"
+                       Foreground="#6E6E6E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0" />
           </Grid>
           <CheckBox x:Name="SundayAsWeekdayCheck" Content="周日晚按工作日执行（默认开：周一要早起，周日晚上不松懈）" />
           <StackPanel Orientation="Horizontal" Spacing="12">

@@ -110,7 +110,7 @@ export function createBlackoutView(ctx) {
       setText(els.remaining, `还剩 ${core.formatCountdownCN(ui.demoRemainingMs())}`);
       setHidden(els.demo, false);
     } else {
-      setText(els.remainingPrefix, "距离本次熄灯结束还有");
+      setText(els.remainingPrefix, "现在睡，还能睡");
       setText(els.remaining, core.formatDurationCN(snapshot.remainingMs));
       setHidden(els.demo, true);
     }
