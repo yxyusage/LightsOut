@@ -160,15 +160,17 @@ jobs:
 
           SIZE=$(du -h "$APK" | cut -f1)
           COMMIT=$(git rev-parse --short HEAD)
+          # ⚠️ 这段多行文本的每一行都必须缩进到 run: | 块标量内部。
+          # 顶格的行会直接终止块标量，被 YAML 当成新的列表项 —— 整个工作流会因此解析失败，
+          # GitHub 连作业都建不出来（表现为工作流名字变成文件路径、运行立刻失败）。
           NOTES="由 GitHub Actions 在 main 分支构建成功后自动更新。
 
-- 提交：$COMMIT
-- 版本：1.1.0 (2)
-- 体积：$SIZE
-- 签名：$CERTS
+          - 提交：$COMMIT
+          - 体积：$SIZE
+          - 签名：$CERTS
 
-debug 签名，仅供侧载试用，不能上架应用商店。
-**签名指纹固定不变**，因此装过本版之后可以直接覆盖升级，不必先卸载。"
+          debug 签名，仅供侧载试用，不能上架应用商店。
+          **签名指纹固定不变**，因此装过本版之后可以直接覆盖升级，不必先卸载。"
           printf '%s' "$NOTES" > /tmp/notes.md
           # 固定复用同一个标签并每次覆盖，保证 README 里的固定链接永远指向最新构建
           gh release view android-latest >/dev/null 2>&1 || gh release create android-latest \
