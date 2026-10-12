@@ -5,7 +5,7 @@ using System.Text;
 namespace Xideng.Desktop.Platform;
 
 /// <summary>前台窗口所属应用的信息。</summary>
-public sealed record ForegroundAppInfo(int ProcessId, string ProcessName, string WindowTitle);
+public sealed record ForegroundAppInfo(int ProcessId, string ProcessName, string WindowTitle, IntPtr WindowHandle);
 
 /// <summary>
 /// 前台进程监听抽象（PRD 5.2「程序运行监听权限」/ PRD 5.3「应用运行监听权限」）。
@@ -138,7 +138,7 @@ public sealed class WindowsProcessWatcher : IProcessWatcher
 
         var title = ReadWindowTitle(hwnd);
         var name = ResolveProcessName((int)pid);
-        return new ForegroundAppInfo((int)pid, name, title);
+        return new ForegroundAppInfo((int)pid, name, title, hwnd);
     }
 
     private static string ReadWindowTitle(IntPtr hwnd)

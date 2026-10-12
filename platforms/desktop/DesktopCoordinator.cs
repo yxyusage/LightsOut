@@ -49,6 +49,7 @@ public sealed class DesktopCoordinator : IDisposable
     private bool _whitelistSuspended;
     private DateTime _lastWhitelistStamp = DateTime.MinValue;
     private string? _lastWhitelistWindowKey;
+    private int _lastWhitelistPid;
 
     public DesktopCoordinator()
     {
@@ -180,7 +181,7 @@ public sealed class DesktopCoordinator : IDisposable
                 if (!_whitelistSuspended)
                 {
                     _whitelistSuspended = true;
-                    SuspendBlackoutWindowsForWhitelist();
+                    SuspendBlackoutWindowsForWhitelist(info!.ProcessId);
                 }
 
                 // 预算仅在真实熄灯时段消耗（测试预览不扣额度）
@@ -226,19 +227,30 @@ public sealed class DesktopCoordinator : IDisposable
         }
     }
 
-    private void SuspendBlackoutWindowsForWhitelist()
+    private void SuspendBlackoutWindowsForWhitelist(int pid)
     {
-        foreach (var window in _blackoutWindows)
+        // 不隐藏黑屏：把白名单进程的所有窗口临时提升到置顶层（浮在黑屏之上可见可用），
+        // 黑屏保持全屏置顶，继续遮挡桌面与其他所有普通窗口。
+        if (pid > 0)
         {
-            window.SuspendForWhitelist();
+            WindowZ.PromoteProcessWindows(pid);
         }
+
+        _lastWhitelistPid = pid;
     }
 
     private void ResumeBlackoutWindows()
     {
+        // 白名单窗口降回普通层，被黑屏重新遮住；黑屏重申置顶即可（无需抢焦点）
+        if (_lastWhitelistPid > 0)
+        {
+            WindowZ.DemoteProcessWindows(_lastWhitelistPid);
+        }
+
+        _lastWhitelistPid = 0;
         foreach (var window in _blackoutWindows)
         {
-            window.ResumeForBlackout();
+            window.RefreshTopmost();
         }
     }
 
@@ -264,6 +276,8 @@ public sealed class DesktopCoordinator : IDisposable
 
         foreach (var window in _blackoutWindows)
         {
+            // 黑屏始终显示（即使白名单挂起也保持，用于遮挡其他普通窗口）；
+            // 白名单窗口由 WindowZ 提升到黑屏之上可见，而不是隐藏黑屏。
             if (_enteringBlackout)
             {
                 window.RequirePull();
@@ -277,7 +291,10 @@ public sealed class DesktopCoordinator : IDisposable
 
         // 周期性轻量重申置顶（不抢焦点）；真正的强制抢占由前台进程监听触发。
         // 若每 250ms 都 Activate()，用户将完全无法使用白名单应用。
-        if (Settings.Value.Guard.ReassertTopmost && DateTime.UtcNow >= _nextTopmostRefreshAt)
+        // 白名单挂起期间不做周期置顶，避免把刚让出的窗口重新拉回。
+        if (Settings.Value.Guard.ReassertTopmost
+            && DateTime.UtcNow >= _nextTopmostRefreshAt
+            && !_whitelistSuspended)
         {
             _nextTopmostRefreshAt = DateTime.UtcNow.AddSeconds(3);
             foreach (var window in _blackoutWindows)
@@ -407,17 +424,31 @@ public sealed class DesktopCoordinator : IDisposable
         ReassertTopmost();
     }
 
-    /// <summary>该进程是否在白名单中（PRD 2.2.3）。</summary>
+    /// <summary>该进程是否在白名单中（PRD 2.2.3）。进程名忽略大小写、容错 .exe 后缀。</summary>
     public bool IsWhitelistedProcess(string processName)
     {
-        if (string.IsNullOrWhiteSpace(processName))
+        var candidate = NormalizeProcessName(processName);
+        if (candidate.Length == 0)
         {
             return false;
         }
 
         return Settings.Value.Whitelist.Apps.Any(app =>
-            !string.IsNullOrWhiteSpace(app.ProcessName) &&
-            string.Equals(app.ProcessName, processName, StringComparison.OrdinalIgnoreCase));
+        {
+            var configured = NormalizeProcessName(app.ProcessName);
+            return configured.Length > 0 && string.Equals(configured, candidate, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    private static string NormalizeProcessName(string? raw)
+    {
+        var name = (raw ?? string.Empty).Trim();
+        if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            name = name[..^4];
+        }
+
+        return name;
     }
 
     private void HandleClockTamper(ClockJumpEvent jump, DateTime now)

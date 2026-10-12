@@ -414,25 +414,6 @@ public partial class BlackoutWindow : Window
 
     // ── 白名单 ──────────────────────────────────────────────
 
-    /// <summary>白名单应用在前台时让出屏幕：隐藏黑屏窗口，应用可正常使用（PRD 2.2.3）。</summary>
-    public void SuspendForWhitelist()
-    {
-        if (IsVisible)
-        {
-            Hide();
-        }
-    }
-
-    /// <summary>用户离开白名单应用：立即恢复熄灯置顶。</summary>
-    public void ResumeForBlackout()
-    {
-        if (!IsVisible)
-        {
-            Show();
-            ReassertTopmost();
-        }
-    }
-
     /// <summary>同步白名单共用时长剩余（协调器心跳调用）。</summary>
     public void UpdateWhitelistRemaining(long remainingMs, long totalMs)
     {
