@@ -65,7 +65,24 @@ class LockController(private val context: Context, private val graph: AppGraph) 
         } else {
             base
         }
-        val settings = snapshot.settings
+        // ── 0. 兜底门禁：从未主动启用过计划时，相位一律按"未熄灯"处理 ──
+        //
+        // ⚠️ 这一步必须在**相位判定的出口**做，而不是在 applyPhase 里"补一次 dismiss"。
+        // 早先写成了后者，结果和无障碍服务的 reassertBlackout 直接对打：
+        //   applyPhase 每 250ms dismiss 一次，无障碍每 800ms launch 一次 ——
+        // 真机表现就是"画面一直在来回切"。
+        // 把相位压成 OFF 之后，下面所有分支（含 reassert）都不会再认为应该熄灯，
+        // 矛盾从源头消失。
+        //
+        // 演示模式不受此门禁限制：那是用户显式点的一次预览，
+        // 否则刚装好、还没启用计划的人点"立即预览"会什么都看不到。
+        val gated =
+            if (!snapshot.settings.onboarded && !demoOverride) {
+                snapshot.copy(phase = Phase.OFF, remainingMs = 0)
+            } else {
+                snapshot
+            }
+        val settings = gated.settings
 
         // ── 1. 防系统时间篡改检测（PRD 三）──
         if (settings.guard.detectClockTamper) {
@@ -76,13 +93,13 @@ class LockController(private val context: Context, private val graph: AppGraph) 
         }
 
         // ── 2. 落锚 / 跨时段重新落锚（演示模式不落锚，否则演示结束后会被锚点锁住）──
-        if (!demoOverride) maintainAnchor(snapshot)
+        if (!demoOverride) maintainAnchor(gated)
 
         // ── 3. 白名单时长实时扣减（PRD 2.2.3）──
         val exhausted = chargeWhitelistSession()
 
         // ── 4. 应用相位：进入或退出熄灯 ──
-        applyPhase(snapshot, exhausted)
+        applyPhase(gated, exhausted)
 
         // ── 5. 重排下一次唤醒（PRD 2.2.1）──
         if (force || snapshot.phase != lastPhase) {
@@ -169,16 +186,8 @@ class LockController(private val context: Context, private val graph: AppGraph) 
 
     /** 把相位落到界面上 */
     private fun applyPhase(snapshot: EngineSnapshot, whitelistExhausted: Boolean) {
-        // 兜底门禁：用户从未主动启用过计划时，绝不熄灯。
-        //
-        // 只在 MainActivity 里拦是不够的 —— 闹钟、开机自启、前台服务心跳都会
-        // 直接走到这里，绕过 MainActivity。默认 plan.enabled = false 已经挡住了
-        // 大部分情况，这一层是防止数据被改回、或从旧版本升级上来的存量配置。
-        if (!snapshot.settings.onboarded) {
-            BlackoutActivity.requestDismiss()
-            WarningActivity.requestDismiss()
-            return
-        }
+        // 门禁已上移到 tick() 里（把相位压成 OFF）。
+        // 不要在这里"每拍 dismiss" —— 那会和 reassertBlackout 打架造成画面反复切换。
 
         // PRD 2.2.4：通话中放行。收起熄灯界面但服务继续运行，通话结束后的下一拍自动恢复。
         if (CallStateMonitor.isInCall(context)) {
@@ -281,11 +290,21 @@ class LockController(private val context: Context, private val graph: AppGraph) 
         NotificationHelper.cancel(context, Constants.NOTIFICATION_ID_WARNING)
     }
 
-    /** 无障碍服务检测到非白名单应用时调用（PRD 三） */
+    /**
+     * 无障碍服务检测到非白名单应用时调用（PRD 三）。
+     *
+     * 用 isPresented 而不是 isVisible：息屏时 Activity 只是 paused，
+     * 界面还在返回栈上，此时再 launch 一次毫无意义，只会让画面闪。
+     * 真正需要"把界面拉到最前"的场景是用户切到了别的应用 ——
+     * 那种情况下 Activity 会被 stop，isPresented 仍为 true，
+     * 所以这里额外做一次 REORDER_TO_FRONT 是必要的，但不能无脑重启。
+     */
     fun reassertBlackout() {
-        if (!BlackoutActivity.isVisible()) {
-            BlackoutActivity.launch(context)
+        if (BlackoutActivity.isPresented()) {
+            BlackoutActivity.bringToFront()
+            return
         }
+        BlackoutActivity.launch(context)
     }
 
     /* ───────────── 演示模式 ───────────── */

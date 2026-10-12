@@ -720,6 +720,30 @@ class BlackoutActivity : AppCompatActivity() {
             }
         }
 
+        /**
+         * 把已经在返回栈里的熄灯界面拉到最前（不重建、不重启动画）。
+         *
+         * 用于"用户切到了非白名单应用"的重新接管：Activity 此时是 stopped，
+         * isPresented 仍为 true，所以不该走 launch 那条会带起新 Intent 的路径。
+         */
+        fun bringToFront() {
+            val activity = instance?.get() ?: return
+            if (activity.isFinishing) return
+            try {
+                val intent =
+                    Intent(activity, BlackoutActivity::class.java)
+                        .setAction(ACTION_ENTER)
+                        .addFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK or
+                                Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT,
+                        )
+                activity.startActivity(intent)
+            } catch (error: Exception) {
+                // 后台启动被拒时保持现状即可，前台服务的心跳会再试
+            }
+        }
+
         fun requestDismiss() {
             instance?.get()?.requestExit()
         }

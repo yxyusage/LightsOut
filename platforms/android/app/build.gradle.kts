@@ -84,6 +84,10 @@ android {
 
     buildFeatures {
         viewBinding = true
+        // 打开 BuildConfig，让界面能显示真实的 versionName / versionCode。
+        // 之前界面上的版本号是代码里写死的常量，装的是哪一版根本看不出来 ——
+        // 结果"修复到底生效没有"只能靠猜，非常容易误判。
+        buildConfig = true
     }
 
     packaging {

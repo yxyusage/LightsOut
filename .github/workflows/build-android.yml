@@ -176,8 +176,10 @@ jobs:
           gh release view android-latest >/dev/null 2>&1 || gh release create android-latest \
             --title "Android 最新构建（自动发布）" \
             --notes "由 GitHub Actions 在 main 分支构建成功后自动更新。debug 签名，仅供侧载试用，不能上架应用商店。" \
-            --prerelease
-          gh release edit android-latest --notes-file /tmp/notes.md
+            --latest
+          # 必须是正式发布（不能是 prerelease）：GitHub 的 /releases/latest 与仓库侧栏
+          # 都不显示 prerelease，用户会以为"根本没建 Release"。
+          gh release edit android-latest --notes-file /tmp/notes.md --prerelease=false --latest
           gh release upload android-latest "$APK#app-debug.apk" --clobber
           echo "已发布到 Release: android-latest"
 

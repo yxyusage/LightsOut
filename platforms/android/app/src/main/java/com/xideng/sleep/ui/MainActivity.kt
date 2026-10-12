@@ -9,6 +9,7 @@ import android.os.Looper
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.xideng.sleep.AppGraph
+import com.xideng.sleep.BuildConfig
 import com.xideng.sleep.XidengApp
 import com.xideng.sleep.core.Constants
 import com.xideng.sleep.core.Phase
@@ -66,7 +67,10 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, EmergencyActivity::class.java))
         }
 
-        binding.footerText.text = "熄灯早睡 v" + Constants.VERSION +
+        // 显示**真实**的构建版本，而不是代码里写死的常量。
+        // 排查"我装的到底是不是新版"时，这一行是第一手依据。
+        binding.footerText.text = "熄灯早睡 v" + BuildConfig.VERSION_NAME +
+            " (" + BuildConfig.VERSION_CODE + ")" +
             " · Android 原生版\n" +
             "所有设置、密码与用量记录只保存在本机，不上传任何服务器。"
     }
