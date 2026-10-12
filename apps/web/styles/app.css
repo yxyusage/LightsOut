@@ -472,6 +472,28 @@ input[type="range"]::-moz-range-thumb {
   overflow: visible;
   color: var(--lamp);
 }
+/* 拉绳仪式：这一阶段灯层要能接收拖拽，因此放开 pointer-events */
+/*
+  拉绳阶段必须把背景压暗。
+  否则首页 UI 会原样透出来 —— 实测倒计时文字直接压在「提前 15 分钟」按钮上，
+  既看不清又显得像渲染错误。桌面端在这一步也是压暗的（DimLayer）。
+*/
+.lamp--pull { pointer-events: auto; cursor: grab; touch-action: none; }
+.lamp--pull .lamp__veil { opacity: 0.86; }
+.lamp--pull:active { cursor: grabbing; }
+.lamp--pull .lamp__assembly { transform: translateY(var(--pull, 0px)); }
+.lamp__prompt {
+  position: absolute;
+  left: 50%;
+  top: 76%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  padding: 0 20px;
+}
+.lamp__prompt-title { color: var(--lamp); font-size: 0.95rem; letter-spacing: 0.08em; }
+.lamp__prompt-timer { margin-top: 6px; color: var(--text-dim); font-size: 0.78rem; }
+
 /* 几何比例与桌面端一致，详见 index.html 里那段注释 */
 .lamp__assembly { transform-origin: 100px 0; }
 .lamp__cord { stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.4; }
@@ -507,6 +529,9 @@ input[type="range"]::-moz-range-thumb {
   100% { transform: translateY(0) scaleY(1); }
 }
 @keyframes veil-in { 0% { opacity: 0; } 42% { opacity: 0.3; } 100% { opacity: 1; } }
+/* 从拉绳阶段接上：起点是压暗值，不再从 0 开始（否则会闪一下亮） */
+@keyframes veil-in-from-pull { 0% { opacity: 0.86; } 100% { opacity: 1; } }
+.lamp--enter.is-from-pull .lamp__veil { animation: veil-in-from-pull 1.5s linear forwards; }
 @keyframes veil-out { 0% { opacity: 1; } 45% { opacity: 0.72; } 100% { opacity: 0; } }
 @keyframes bulb-out {
   0% { opacity: 1; transform: scale(1); }

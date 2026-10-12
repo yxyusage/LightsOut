@@ -3,6 +3,7 @@
  */
 
 import { el, icon, replaceChildren, setHidden, setText } from "../lib/dom.js";
+import { renderShareCard, shareCard } from "../lib/share-card.js";
 import { requireElement } from "./controls.js";
 
 export function createProfileView(ctx) {
@@ -15,6 +16,8 @@ export function createProfileView(ctx) {
     budgetHint: requireElement("#budget-hint"),
     weekReview: requireElement("#week-review"),
     weekReviewSummary: requireElement("#week-review-summary"),
+    shareWeek: requireElement("#btn-share-week"),
+    shareWeekHint: requireElement("#share-week-hint"),
     password: requireElement("#profile-password"),
     passwordHint: requireElement("#password-hint"),
     savePassword: requireElement("#btn-save-password"),
@@ -26,6 +29,37 @@ export function createProfileView(ctx) {
 
   els.back.addEventListener("click", () => actions.goTo("home"));
   els.resetAll.addEventListener("click", () => actions.clearAllData());
+
+  // 生成本周卡片并分享。
+  // 卡片完全由本机 canvas 绘制、不发任何请求 —— 这与"数据不出本机"的承诺一致，
+  // 所以这里不需要（也不应该有）任何上传或第三方分享 SDK。
+  els.shareWeek.addEventListener("click", async () => {
+    setText(els.shareWeekHint, "正在生成…");
+    try {
+      const now = new Date();
+      const days = ctx.sleepRecords.week(now);
+      const keptDays = days.filter((day) => day.entered && !day.dismissed).length;
+      const totalDismiss = days.reduce((sum, day) => sum + day.dismissCount, 0);
+      const rangeLabel = days.length
+        ? `${days[0].dateKey} — ${days[days.length - 1].dateKey}`
+        : "";
+
+      const canvas = renderShareCard({ days, keptDays, totalDismiss, rangeLabel });
+      const result = await shareCard(canvas, {
+        text: `我本周按时熄灯 ${keptDays} 天。熄灯早睡 —— 到点把手机交还给睡眠。`,
+      });
+
+      const messages = {
+        shared: "已调起系统分享面板，选微信或 QQ 即可发出去",
+        downloaded: "卡片已存到下载目录，可以自己发出去",
+        cancelled: "已取消分享",
+        unsupported: "当前浏览器不能生成图片，请换用手机浏览器打开",
+      };
+      setText(els.shareWeekHint, messages[result] ?? "");
+    } catch (error) {
+      setText(els.shareWeekHint, "生成失败：" + (error?.message ?? "未知错误"));
+    }
+  });
 
   els.savePassword.addEventListener("click", async () => {
     const password = els.password.value;

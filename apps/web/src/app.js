@@ -92,6 +92,8 @@ const ui = {
   lastActiveWindowEnd: null,
   /** 本周回顾：最近一次已记录的熄灯时段键（同一时段只记一次"进入"） */
   lastRecordedWindowKey: null,
+  /** 已经完成过拉绳仪式的时段键（每个熄灯时段只要求拉一次） */
+  lastPulledWindowKey: null,
   whitelistSession: null,
   wakeLockSentinel: null,
   disposers: [],
@@ -156,7 +158,10 @@ const onboardingView = createOnboardingView(ctx);
 const blackoutView = createBlackoutView(ctx);
 const warningView = createWarningView(ctx);
 const sheetsView = createSheets(ctx);
-const lamp = createLamp({ element: document.getElementById("lamp") });
+const lamp = createLamp({
+  element: document.getElementById("lamp"),
+  promptElement: document.getElementById("lamp-prompt"),
+});
 
 /* ═════════════ 4. 具体动作 ═════════════ */
 
@@ -506,6 +511,16 @@ async function applyPhase(snapshot) {
       }
     }
     if (previous !== "blackout") {
+      // 拉绳仪式：每个熄灯时段只要求一次，由用户亲手把灯绳拉到底。
+      //
+      // 演示模式跳过 —— 那是给人"看一眼效果"的入口，多一步拖拽只会碍事。
+      // 超时兜底在 lamp.awaitPull 里，绝不会把人卡在拉绳界面。
+      const pullKey = snapshot.window?.startKey;
+      if (!isDemo() && pullKey && ui.lastPulledWindowKey !== pullKey) {
+        ui.lastPulledWindowKey = pullKey;
+        await lamp.awaitPull();
+        if (ui.phaseToken !== token) return;
+      }
       await lamp.playEnter();
       if (ui.phaseToken !== token) return;
     }

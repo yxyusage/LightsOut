@@ -97,6 +97,15 @@
       <circle class="lamp__bulb" cx="100" cy="228" r="34" />
     </g>
   </svg>
+
+  <!--
+    拉绳仪式的提示。进入熄灯时段时由用户亲手拉下灯绳；
+    拉不到底会回弹，超过 10 秒则由应用自动熄灯（见 lib/lamp.js）。
+  -->
+  <div class="lamp__prompt" id="lamp-prompt" hidden>
+    <p class="lamp__prompt-title">拉一下灯绳</p>
+    <p class="lamp__prompt-timer"></p>
+  </div>
 </div>
 
 <!-- ══════════ 1. 首次使用引导 ══════════ -->
@@ -300,6 +309,9 @@
       <h2>本周坚持</h2>
       <div class="week-grid" id="week-review"></div>
       <p class="hint" id="week-review-summary">—</p>
+      <!-- 分享卡片：纯本机 canvas 生成，走系统分享面板（微信 / QQ 都在候选里） -->
+      <button type="button" class="btn btn--ghost btn--block" id="btn-share-week">生成本周卡片并分享</button>
+      <p class="hint" id="share-week-hint"></p>
     </section>
 
     <section class="card">

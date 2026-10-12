@@ -7,7 +7,8 @@
  * 版本号变更时旧缓存会被清理，避免用户卡在旧版本资源上。
  */
 
-const CACHE_VERSION = "xideng-v1.0.0";
+// 预缓存清单有增减时请一并升版本：否则浏览器可能继续用旧的缓存条目。
+const CACHE_VERSION = "xideng-v1.1.0";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -17,6 +18,7 @@ const APP_SHELL = [
   "./src/core.js",
   "./src/lib/dom.js",
   "./src/lib/lamp.js",
+  "./src/lib/share-card.js",
   "./src/views/blackout.js",
   "./src/views/controls.js",
   "./src/views/home.js",
@@ -35,6 +37,7 @@ const APP_SHELL = [
   "./core/src/storage.js",
   "./core/src/settings.js",
   "./core/src/password.js",
+  "./core/src/sleep.js",
   "./core/src/ai.js",
   "./core/src/audio.js",
   "./core/src/guard.js",

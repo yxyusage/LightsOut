@@ -199,7 +199,30 @@ async function checkServiceWorkerShell() {
     }
   }
 
-  notes.push(`已校验 Service Worker 预缓存的 ${entries.length} 个资源全部存在`);
+  // 反向校验：应用会加载的**每一个** JS 模块都必须出现在清单里。
+  //
+  // 只校验"清单里的都存在"是不够的。新增一个模块却忘了加进 APP_SHELL，
+  // 后果是**离线时整个应用打不开** —— 模块 404 会让入口的 import 链直接断掉。
+  // 而联网开发时完全看不出来，所以必须由检查脚本守住。
+  // 本项目真的漏过 ./core/src/sleep.js。
+  const listed = new Set(entries.map((entry) => entry.replace(/^\.\//, "")));
+  const moduleRoots = [
+    { sourceDir: join(repoRoot, "apps", "web", "src"), sourcePrefix: "apps/web/src", listedPrefix: "src" },
+    { sourceDir: join(repoRoot, "packages", "core", "src"), sourcePrefix: "packages/core/src", listedPrefix: "core/src" },
+  ];
+
+  for (const { sourceDir, sourcePrefix, listedPrefix } of moduleRoots) {
+    for (const file of await walk(sourceDir)) {
+      if (extname(file) !== ".js") continue;
+      const rel = file.replace(repoRoot, "").replace(/\\/g, "/").replace(/^\//, "");
+      const listedPath = `${listedPrefix}/${rel.slice(sourcePrefix.length + 1)}`;
+      if (!listed.has(listedPath)) {
+        fail(relative, `模块 ${rel} 没有被 APP_SHELL 预缓存 —— 离线时应用会打不开`);
+      }
+    }
+  }
+
+  notes.push(`已校验 Service Worker 预缓存的 ${entries.length} 个资源全部存在，且所有应用模块都已被预缓存`);
 }
 
 /* ───────────── 5. 核心层不得直接读取系统时间 ───────────── */
