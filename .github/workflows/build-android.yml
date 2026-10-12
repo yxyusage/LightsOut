@@ -145,11 +145,37 @@ jobs:
         run: |
           APK=$(ls platforms/android/app/build/outputs/apk/debug/*.apk | head -1)
           echo "准备发布: $APK"
+
+          # 把签名指纹写进 Release 说明。
+          # 这样做是因为 CI 日志对匿名访问是 403，而 Release 说明可以用 API 读到 ——
+          # 于是"这一版到底用哪个密钥签的"就成了可核对的事实，而不是一句承诺。
+          APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner 2>/dev/null | sort -V | tail -1)
+          if [ -n "$APKSIGNER" ]; then
+            CERTS=$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null | grep -i "SHA-256" | head -1 | sed 's/^[[:space:]]*//')
+          else
+            CERTS="（找不到 apksigner，未能读取）"
+          fi
+          [ -n "$CERTS" ] || CERTS="（读取签名失败）"
+          echo "签名: $CERTS"
+
+          SIZE=$(du -h "$APK" | cut -f1)
+          COMMIT=$(git rev-parse --short HEAD)
+          NOTES="由 GitHub Actions 在 main 分支构建成功后自动更新。
+
+- 提交：$COMMIT
+- 版本：1.1.0 (2)
+- 体积：$SIZE
+- 签名：$CERTS
+
+debug 签名，仅供侧载试用，不能上架应用商店。
+**签名指纹固定不变**，因此装过本版之后可以直接覆盖升级，不必先卸载。"
+          printf '%s' "$NOTES" > /tmp/notes.md
           # 固定复用同一个标签并每次覆盖，保证 README 里的固定链接永远指向最新构建
           gh release view android-latest >/dev/null 2>&1 || gh release create android-latest \
             --title "Android 最新构建（自动发布）" \
             --notes "由 GitHub Actions 在 main 分支构建成功后自动更新。debug 签名，仅供侧载试用，不能上架应用商店。" \
             --prerelease
+          gh release edit android-latest --notes-file /tmp/notes.md
           gh release upload android-latest "$APK#app-debug.apk" --clobber
           echo "已发布到 Release: android-latest"
 
