@@ -146,12 +146,18 @@ class BlackoutActivity : AppCompatActivity() {
         handler.removeCallbacks(ticker)
         handler.post(ticker)
 
-        if (!entering) {
+        if (!enterPlayed) {
+            enterPlayed = true
             entering = true
             // 拉绳仪式：本时段还要求过就先进拉绳界面，否则直接播自动动画。
-            // 息屏后重新解锁回到这里时 entering 已是 true，不会重复要求拉绳。
             if (needPull && !pullDone) startPullRitual() else playEnterAnimation()
         } else {
+            // 本时段已经播过：直接落到熄灯内容，绝不重播动画。
+            // 这一步是"画面来回切"的根治点 —— Activity 重建、重复 startActivity、
+            // 息屏后解锁回到这里，走的都是这条分支。
+            binding.lampLayer.visibility = View.GONE
+            binding.lampPullHint.visibility = View.GONE
+            binding.fadeOverlay.visibility = View.GONE
             binding.nativeContent.alpha = 1f
         }
     }
@@ -660,6 +666,23 @@ class BlackoutActivity : AppCompatActivity() {
 
         /** 本次进入是否需要用户亲手拉绳 */
         const val EXTRA_REQUIRE_PULL = "com.xideng.sleep.extra.REQUIRE_PULL"
+
+        /**
+         * 本时段是否已经播过入场动画。
+         *
+         * ⚠️ 必须是**进程级**而不是 Activity 的实例字段。
+         * 早先只用了实例字段 entering，一旦 Activity 被系统重建（配置变化、内存回收、
+         * 或被重复 startActivity），字段归零 → 入场动画重新播一遍 →
+         * 真机表现就是"熄灭界面和灯泡界面来回切"。
+         * 动画本就该"每个时段只播一次"，与 Activity 的生命周期无关。
+         */
+        @Volatile
+        private var enterPlayed = false
+
+        /** 新时段 / 新一次演示开始时调用，允许再播一次入场动画 */
+        fun resetEnterFlag() {
+            enterPlayed = false
+        }
 
         /** 不拉绳时的兜底：到点自动熄灭（与桌面端 10 秒一致） */
         private const val PULL_TIMEOUT_MS = 10_000L

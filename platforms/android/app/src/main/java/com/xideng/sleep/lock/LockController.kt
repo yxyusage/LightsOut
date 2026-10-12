@@ -212,7 +212,11 @@ class LockController(private val context: Context, private val graph: AppGraph) 
                     // 演示模式的 key 固定，所以 startDemo() 会把它清掉，让每次预览都能看到拉绳。
                     val windowKey = snapshot.windowStartKey
                     val newWindow = windowKey != null && windowKey != lastPullWindowKey
-                    if (newWindow) lastPullWindowKey = windowKey
+                    if (newWindow) {
+                        lastPullWindowKey = windowKey
+                        // 新时段：允许再播一次入场动画（进程级标志，跨 Activity 重建保持）
+                        BlackoutActivity.resetEnterFlag()
+                    }
                     BlackoutActivity.launch(context, requirePull = newWindow)
                 }
             }
@@ -319,6 +323,8 @@ class LockController(private val context: Context, private val graph: AppGraph) 
         demoUntilMs = System.currentTimeMillis() + durationMs
         // 演示模式的时段键是固定的，清掉它，让每次预览都能看到拉绳界面
         lastPullWindowKey = null
+        // 每次预览都是"新的一次"，允许重播入场动画
+        BlackoutActivity.resetEnterFlag()
         startLockService()
         tick("demo-start", force = true)
     }
