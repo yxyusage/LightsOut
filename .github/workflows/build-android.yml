@@ -107,7 +107,7 @@ jobs:
           retention-days: 30
 
       # 把 APK 发到 Release —— Actions 的 Artifacts 需要登录才能下载，
-      # 而 Release 附件任何人都能直接下载（评审、朋友、手机浏览器都可以）。
+      # 而 Release 附件任何人都能直接下载（朋友、同事、手机浏览器都可以）。
       - name: 发布到 Release（免登录下载）
         if: always() && hashFiles('platforms/android/app/build/outputs/apk/debug/*.apk') != ''
         env:
