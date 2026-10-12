@@ -44,7 +44,7 @@ public partial class BlackoutWindow : Window
     // PRD 4.3 写的入场动画是"约 1.5 秒"，拉绳是为仪式感加的一步 ——
     // 但兜底必须短，否则用户会盯着倒计时干等，把仪式感变成卡顿。
     private const int PullTimeoutSeconds = 10;
-    private DispatcherTimer? _pullTimer;           // 60 秒超时倒计时
+    private DispatcherTimer? _pullTimer;           // 不拉绳时的超时倒计时（见 PullTimeoutSeconds）
     private int _pullSecondsLeft;
     private DispatcherTimer? _snapTimer;           // 未拉到底时的回弹动画
 
