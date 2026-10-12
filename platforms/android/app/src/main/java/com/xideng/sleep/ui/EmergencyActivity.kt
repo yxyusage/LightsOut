@@ -1,6 +1,7 @@
 package com.xideng.sleep.ui
 
 import android.os.Bundle
+import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import com.xideng.sleep.XidengApp
 import com.xideng.sleep.core.TimeUtils
@@ -27,6 +28,14 @@ class EmergencyActivity : AppCompatActivity() {
 
         binding = ActivityEmergencyBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // 本页用的是对话框主题，其默认宽度很窄 —— 在 11 寸平板上输入框小到几乎点不中。
+        // 显式给一个宽度：占屏幕 92%，但最多 560dp（再宽就不像对话框了，
+        // 与交接包里 ContentWidth 的 560dp 上限定同一个值）。
+        val density = resources.displayMetrics.density
+        val byScreen = (resources.displayMetrics.widthPixels * 0.92f).toInt()
+        val capped = (560f * density).toInt()
+        window?.setLayout(minOf(byScreen, capped), ViewGroup.LayoutParams.WRAP_CONTENT)
 
         binding.btnCancel.setOnClickListener { finish() }
         binding.btnConfirm.setOnClickListener { submit() }
