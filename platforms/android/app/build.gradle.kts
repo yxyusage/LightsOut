@@ -33,8 +33,10 @@ android {
         // 这一版开始用固定密钥签名，因此从 1 提上来：
         // 用户可以在装了旧版的前提下直接覆盖升级（旧版用的是临时 debug 密钥，
         // 那一次仍然需要先卸载）。
-        versionCode = 2
-        versionName = "1.1.0"
+        // 每次修复都要能被区分出来 —— 用户就是靠页脚那行版本号判断"装的是不是新版"。
+        // 之前一连串修复都停在 (2)，页脚毫无变化，等于没给出任何判断依据。
+        versionCode = 3
+        versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
