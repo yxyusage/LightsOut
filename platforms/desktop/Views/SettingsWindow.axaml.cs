@@ -1,8 +1,10 @@
 using System.Diagnostics;
+using System.IO;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Avalonia.Platform.Storage;
 using Xideng.Desktop.Core;
 using Xideng.Desktop.Platform;
 
@@ -75,7 +77,8 @@ public partial class SettingsWindow : Window
         TestBlackoutButton.Click += (_, _) => TestBlackout();
         ResetButton.Click += (_, _) => ResetToDefaults();
         OpenDataFolderButton.Click += (_, _) => OpenDataFolder();
-        AddAppButton.Click += (_, _) => AddWhitelistApp();
+        AddAppButton.Click += (_, _) => AddWhitelistAppFromPicker();
+        BrowseAppButton.Click += (_, _) => AddWhitelistAppFromFile();
         RemoveAppButton.Click += (_, _) => RemoveSelectedApp();
         SetPasswordButton.Click += (_, _) => SetPassword();
         AutoStartCheck.IsCheckedChanged += (_, _) => ApplyAutoStart();
@@ -255,36 +258,118 @@ public partial class SettingsWindow : Window
 
     // ── 白名单 ──────────────────────────────────────────────
 
-    private void AddWhitelistApp()
-    {
-        var name = (NewAppNameBox.Text ?? string.Empty).Trim();
-        var process = (NewAppProcessBox.Text ?? string.Empty).Trim();
+    /// <summary>当前用户自建白名单数量（系统电话/短信不计入上限）。</summary>
+    private int UsedWhitelistSlots() =>
+        _coordinator.Settings.Value.Whitelist.Apps.Count(app => app.Removable);
 
-        if (string.IsNullOrEmpty(name))
+    /// <summary>校验名额是否可用；不可用则提示并返回 false。</summary>
+    private bool EnsureWhitelistSlotAvailable()
+    {
+        if (UsedWhitelistSlots() < Limits.WhitelistAppCountMax)
         {
-            StatusText.Foreground = new SolidColorBrush(Color.Parse("#C97A7A"));
-            StatusText.Text = "请填写应用名称。";
+            return true;
+        }
+
+        StatusText.Foreground = new SolidColorBrush(Color.Parse("#C97A7A"));
+        StatusText.Text = $"白名单最多 {Limits.WhitelistAppCountMax} 个用户应用，已达上限，请先移除一个再添加。";
+        return false;
+    }
+
+    /// <summary>从"正在运行的应用"中点选（无需记进程名）。</summary>
+    private async void AddWhitelistAppFromPicker()
+    {
+        if (!EnsureWhitelistSlotAvailable())
+        {
             return;
         }
 
-        _coordinator.Settings.Update(settings =>
+        var picker = new ProcessPickerWindow { UsedSlots = UsedWhitelistSlots() };
+        var result = await picker.ShowDialog<ProcessPickResult?>(this);
+        if (result is null)
         {
-            settings.Whitelist.Apps.Add(new WhitelistApp
+            return;
+        }
+
+        AddFromProcessPick(result);
+    }
+
+    /// <summary>直接浏览 .exe 文件添加（自动取进程名）。</summary>
+    private async void AddWhitelistAppFromFile()
+    {
+        if (!EnsureWhitelistSlotAvailable())
+        {
+            return;
+        }
+
+        try
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "选择要放行的程序（.exe）",
+                AllowMultiple = false,
+                FileTypeFilter =
+                [
+                    new FilePickerFileType("应用程序") { Patterns = ["*.exe"] },
+                    new FilePickerFileType("所有文件") { Patterns = ["*"] },
+                ],
+            });
+
+            if (files.Count == 0)
+            {
+                return;
+            }
+
+            var path = files[0].TryGetLocalPath();
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                StatusText.Foreground = new SolidColorBrush(Color.Parse("#C97A7A"));
+                StatusText.Text = "无法读取所选文件的路径。";
+                return;
+            }
+
+            var fileName = Path.GetFileNameWithoutExtension(path);
+            AddFromProcessPick(new ProcessPickResult(fileName, fileName));
+        }
+        catch (Exception)
+        {
+            StatusText.Foreground = new SolidColorBrush(Color.Parse("#C97A7A"));
+            StatusText.Text = "打开文件选择器失败，请改用「从运行中的应用选择」。";
+        }
+    }
+
+    private void AddFromProcessPick(ProcessPickResult result)
+    {
+        if (!EnsureWhitelistSlotAvailable())
+        {
+            return;
+        }
+
+        var settings = _coordinator.Settings.Value;
+        var exists = settings.Whitelist.Apps.Any(app =>
+            string.Equals(app.ProcessName, result.ProcessName, StringComparison.OrdinalIgnoreCase));
+        if (exists)
+        {
+            StatusText.Foreground = new SolidColorBrush(Color.Parse("#C97A7A"));
+            StatusText.Text = $"「{result.Name}」已在白名单中。";
+            return;
+        }
+
+        _coordinator.Settings.Update(current =>
+        {
+            current.Whitelist.Apps.Add(new WhitelistApp
             {
                 Id = $"user-{Guid.NewGuid():N}"[..18],
-                Name = name,
-                ProcessName = process,
+                Name = result.Name,
+                ProcessName = result.ProcessName,
                 System = false,
                 Removable = true,
                 CountsAgainstQuota = true,
             });
         });
 
-        NewAppNameBox.Text = string.Empty;
-        NewAppProcessBox.Text = string.Empty;
         LoadFromSettings();
         StatusText.Foreground = new SolidColorBrush(Color.Parse("#9AD19A"));
-        StatusText.Text = $"已添加白名单应用：{name}。";
+        StatusText.Text = $"已添加白名单应用：{result.Name}（进程 {result.ProcessName}）。";
     }
 
     private void RemoveSelectedApp()

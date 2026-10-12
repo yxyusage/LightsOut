@@ -53,6 +53,9 @@ public static class Limits
 
     public const int WhitelistTotalMinutesMin = 5;
 
+    /// <summary>用户可添加的白名单应用上限（系统电话/短信不计入）。</summary>
+    public const int WhitelistAppCountMax = 3;
+
     /// <summary>每周紧急解除额度，PRD 2.1.3。</summary>
     public const int WeeklyQuotaTotal = 2;
 

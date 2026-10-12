@@ -433,6 +433,7 @@ public partial class BlackoutWindow : Window
 
         WhitelistSummary.Text =
             $"所有白名单应用共用总时长 {settings.Whitelist.TotalMinutes} 分钟（上限 60 分钟）；" +
+            $"用户应用最多 {Limits.WhitelistAppCountMax} 个，" +
             "系统电话 / 短信不受限且不占用时长。桌面端通过「全屏置顶 + 前台进程监听」实现等效约束：" +
             "检测到非白名单应用抢到前台焦点时，熄灯窗口会立即重新接管。";
 
