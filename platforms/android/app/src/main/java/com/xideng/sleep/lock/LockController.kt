@@ -41,6 +41,9 @@ class LockController(private val context: Context, private val graph: AppGraph) 
     @Volatile
     private var demoUntilMs: Long = 0L
 
+    /** 已经要求过拉绳的时段键。每个熄灯时段只要求一次（与桌面端 / Web 端一致）。 */
+    private var lastPullWindowKey: String? = null
+
     /**
      * 判定并执行一次相位。
      *
@@ -196,7 +199,12 @@ class LockController(private val context: Context, private val graph: AppGraph) 
                 // 用 isPresented 而不是 isVisible：息屏时 Activity 只是 paused，
                 // 界面还在返回栈上，不该再 launch 一次（否则画面来回切、屏幕被反复点亮）
                 if (!BlackoutActivity.isPresented()) {
-                    BlackoutActivity.launch(context)
+                    // 新时段开始时要求用户亲手拉一次灯绳；同一时段内被重新拉回则不重复要求。
+                    // 演示模式的 key 固定，所以 startDemo() 会把它清掉，让每次预览都能看到拉绳。
+                    val windowKey = snapshot.windowStartKey
+                    val newWindow = windowKey != null && windowKey != lastPullWindowKey
+                    if (newWindow) lastPullWindowKey = windowKey
+                    BlackoutActivity.launch(context, requirePull = newWindow)
                 }
             }
 
@@ -290,6 +298,8 @@ class LockController(private val context: Context, private val graph: AppGraph) 
 
     fun startDemo(durationMs: Long) {
         demoUntilMs = System.currentTimeMillis() + durationMs
+        // 演示模式的时段键是固定的，清掉它，让每次预览都能看到拉绳界面
+        lastPullWindowKey = null
         startLockService()
         tick("demo-start", force = true)
     }

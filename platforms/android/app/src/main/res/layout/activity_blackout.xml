@@ -3,8 +3,7 @@
     android:id="@+id/blackoutRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/xideng_black"
-    android:keepScreenOn="true">
+    android:background="@color/xideng_black">
 
     <!-- 原生兜底布局（PRD 2.2.2）。WebView 不可用或未启用时使用这一份。 -->
     <LinearLayout
@@ -163,6 +162,22 @@
                 android:layout_height="26dp"
                 android:background="@drawable/bg_lamp_handle" />
         </LinearLayout>
+
+        <!--
+          拉绳仪式的提示。进入熄灯时段时由用户亲手把灯绳拉到底；
+          拉不到底会回弹，超过 10 秒则由应用自动熄灯（见 BlackoutActivity.startPullRitual）。
+        -->
+        <TextView
+            android:id="@+id/lampPullHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="110dp"
+            android:gravity="center"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#FFD7A0"
+            android:textSize="15sp"
+            android:visibility="gone" />
     </FrameLayout>
 
     <!-- 动画期间的渐暗/渐亮遮罩 -->

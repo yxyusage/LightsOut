@@ -65,6 +65,15 @@ class BlackoutActivity : AppCompatActivity() {
     private var aiRequested = false
     private var entering = false
 
+    /* ───────────── 拉绳仪式状态 ───────────── */
+
+    /** 本次进入熄灯是否需要用户亲手拉绳（每个时段只要求一次，由 LockController 通过 Intent 告知） */
+    private var needPull = false
+    private var pullDone = false
+    private var pullTimer: android.os.CountDownTimer? = null
+    private var pullStartY = 0f
+    private var pullOffset = 0f
+
     private val ticker = object : Runnable {
         override fun run() {
             if (!resumed) return
@@ -103,6 +112,8 @@ class BlackoutActivity : AppCompatActivity() {
             binding.nativeContent.visibility = View.VISIBLE
         }
 
+        needPull = intent.getBooleanExtra(EXTRA_REQUIRE_PULL, false)
+
         instance = WeakReference(this)
     }
 
@@ -110,7 +121,10 @@ class BlackoutActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         when (intent.action) {
             ACTION_DISMISS -> requestExit()
-            ACTION_ENTER -> Unit
+            ACTION_ENTER -> {
+                // 可能是"新时段开始，请拉绳"，也可能是从后台被重新拉回，按 extra 决定
+                needPull = intent.getBooleanExtra(EXTRA_REQUIRE_PULL, false)
+            }
         }
     }
 
@@ -132,9 +146,11 @@ class BlackoutActivity : AppCompatActivity() {
         handler.removeCallbacks(ticker)
         handler.post(ticker)
 
-        if (!entering && !snapshot.settings.blackout.let { false }) {
+        if (!entering) {
             entering = true
-            playEnterAnimation()
+            // 拉绳仪式：本时段还要求过就先进拉绳界面，否则直接播自动动画。
+            // 息屏后重新解锁回到这里时 entering 已是 true，不会重复要求拉绳。
+            if (needPull && !pullDone) startPullRitual() else playEnterAnimation()
         } else {
             binding.nativeContent.alpha = 1f
         }
@@ -473,6 +489,100 @@ class BlackoutActivity : AppCompatActivity() {
         render(graph.engine.snapshot())
     }
 
+    /* ───────────── 拉绳仪式（与桌面端 / Web 端行为一致）───────────── */
+
+    /**
+     * 显示拉绳界面，等待用户把灯绳拉到底。
+     *
+     * 三条约束，缺一不可：
+     *  1. 拉不到底就松手会**回弹**，和真实灯绳一样；
+     *  2. 超时会**自动熄灭** —— 仪式感绝不能变成"必须拉对才能进入熄灯"，
+     *     否则用户卡在这里，强制接管反而失效了。这条兜底是刚性要求；
+     *  3. 每个熄灯时段只要求一次（由 LockController 决定，只在"新时段开始"时传进来）。
+     */
+    private fun startPullRitual() {
+        if (pullDone) {
+            playEnterAnimation()
+            return
+        }
+
+        binding.lampLayer.visibility = View.VISIBLE
+        binding.lampPullHint.visibility = View.VISIBLE
+        binding.nativeContent.alpha = 0f
+        binding.lampBulb.alpha = 1f
+        binding.lampHandle.translationY = -dp(PULL_REST_DP)
+
+        binding.lampLayer.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    pullStartY = event.rawY
+                    true
+                }
+
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    applyPull(event.rawY - pullStartY)
+                    // 拉到阈值立即触发，不必等松手 —— 和真实灯绳一样有"咔哒"感
+                    if (pullOffset >= dp(PULL_THRESHOLD_DP)) finishPull()
+                    true
+                }
+
+                android.view.MotionEvent.ACTION_UP,
+                android.view.MotionEvent.ACTION_CANCEL,
+                -> {
+                    if (pullOffset >= dp(PULL_THRESHOLD_DP)) finishPull() else if (pullOffset > 0f) snapBackPull()
+                    true
+                }
+
+                else -> false
+            }
+        }
+
+        pullTimer?.cancel()
+        pullTimer =
+            object : android.os.CountDownTimer(PULL_TIMEOUT_MS, 1_000L) {
+                override fun onTick(millisUntilFinished: Long) {
+                    renderPullHint(millisUntilFinished)
+                }
+
+                override fun onFinish() {
+                    finishPull()
+                }
+            }.start()
+        renderPullHint(PULL_TIMEOUT_MS)
+    }
+
+    private fun renderPullHint(millisUntilFinished: Long) {
+        // 向上取整，避免一开始就显示"0 秒"
+        val seconds = (millisUntilFinished + 999L) / 1000L
+        binding.lampPullHint.text = "拉一下灯绳
+灯将在 " + seconds + " 秒后自动熄灭"
+    }
+
+    private fun applyPull(delta: Float) {
+        pullOffset = delta.coerceIn(0f, dp(PULL_THRESHOLD_DP))
+        binding.lampHandle.translationY = -dp(PULL_REST_DP) + pullOffset
+    }
+
+    /** 没拉到底 → 松手回弹复位 */
+    private fun snapBackPull() {
+        pullOffset = 0f
+        binding.lampHandle.animate().translationY(-dp(PULL_REST_DP)).setDuration(200L).start()
+    }
+
+    /** 拉到底或超时：收掉拉绳界面，接着播入场动画 */
+    private fun finishPull() {
+        if (pullDone) return
+        pullDone = true
+        needPull = false
+        pullTimer?.cancel()
+        pullTimer = null
+        binding.lampLayer.setOnTouchListener(null)
+        binding.lampPullHint.visibility = View.GONE
+        binding.lampHandle.animate().cancel()
+        pullOffset = 0f
+        playEnterAnimation()
+    }
+
     /* ───────────── 动画（PRD 4.3）───────────── */
 
     private fun playEnterAnimation() {
@@ -547,6 +657,18 @@ class BlackoutActivity : AppCompatActivity() {
 
     companion object {
         const val ACTION_ENTER = "com.xideng.sleep.action.BLACKOUT_ENTER"
+
+        /** 本次进入是否需要用户亲手拉绳 */
+        const val EXTRA_REQUIRE_PULL = "com.xideng.sleep.extra.REQUIRE_PULL"
+
+        /** 不拉绳时的兜底：到点自动熄灭（与桌面端 10 秒一致） */
+        private const val PULL_TIMEOUT_MS = 10_000L
+
+        /** 拉到底所需的位移（dp） */
+        private const val PULL_THRESHOLD_DP = 96f
+
+        /** 灯绳静止时相对布局位置的偏移（与动画里的起始值保持一致） */
+        private const val PULL_REST_DP = 14f
         const val ACTION_DISMISS = "com.xideng.sleep.action.BLACKOUT_DISMISS"
 
         private const val WEBVIEW_ASSET = "web/blackout.html"
@@ -576,11 +698,16 @@ class BlackoutActivity : AppCompatActivity() {
             return !activity.isFinishing
         }
 
-        fun launch(context: Context) {
+        /**
+         * @param requirePull 新时段开始时传 true，用户需要亲手拉一次灯绳才熄灯。
+         *   已在前台的界面不会重复拉（[isPresented] 为真时调用方根本不会走到这里）。
+         */
+        fun launch(context: Context, requirePull: Boolean = false) {
             try {
                 context.startActivity(
                     Intent(context, BlackoutActivity::class.java)
                         .setAction(ACTION_ENTER)
+                        .putExtra(EXTRA_REQUIRE_PULL, requirePull)
                         .addFlags(
                             Intent.FLAG_ACTIVITY_NEW_TASK or
                                 Intent.FLAG_ACTIVITY_SINGLE_TOP or
