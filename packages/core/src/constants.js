@@ -77,7 +77,8 @@ export const EMERGENCY_TAP_COUNT = 5;
 /** 连续点击的有效时间窗（毫秒）——超出视为重新计数 */
 export const EMERGENCY_TAP_WINDOW_MS = 3000;
 
-/** 忘记密码后的重置冷却时长：等待 24 小时才能重置密码与本周额度（防止靠重置免费越狱） */
+/** 忘记密码后的重置冷却：等待 24 小时才能清空密码。
+ *  刻意**不**重置本周额度 —— 否则每 24 小时白送 2 次解除，每周额度会被彻底架空。 */
 export const PASSWORD_RESET_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 /** 默认紧急解除密码。首次启动引导会要求用户修改。 */
@@ -148,7 +149,7 @@ export const DEFAULT_SETTINGS = {
     /** WebCrypto SHA-256 摘要；空字符串表示尚未设置 */
     passwordHash: "",
     quotaTotal: WEEKLY_QUOTA_TOTAL,
-    /** 忘记密码重置申请的时间戳（毫秒）；null 表示未申请。24 小时后自动重置密码与本周额度 */
+    /** 忘记密码重置申请的时间戳（毫秒）；null 表示未申请。24 小时后自动清空密码（不影响本周额度） */
     passwordResetAt: null,
   },
 

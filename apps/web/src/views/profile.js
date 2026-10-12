@@ -37,14 +37,18 @@ export function createProfileView(ctx) {
     }
     await actions.savePassword(password);
     els.password.value = "";
-    setText(els.passwordHint, "已更新。请记牢，忘记后只能清除本地数据重置。");
+    setText(els.passwordHint, "已更新。请记牢；实测确实忘了，可以用下面的「忘记密码」在 24 小时后重置。");
     els.passwordHint.classList.remove("hint--error");
   });
 
   els.forgotPassword.addEventListener("click", () => {
     const info = actions.requestPasswordReset();
     if (info?.pending) {
-      setText(els.passwordResetHint, `重置申请已生效：约 ${Math.ceil(info.remainingMs / 3_600_000)} 小时后密码与本周额度将被重置。期间无法紧急解除。`);
+      setText(
+        els.passwordResetHint,
+        `重置申请已生效：约 ${Math.ceil(info.remainingMs / 3_600_000)} 小时后密码会被清空，届时可设置新密码。` +
+          "本周额度不受影响；这期间用正确密码依然可以正常解除。"
+      );
     }
   });
 
@@ -123,7 +127,7 @@ export function createProfileView(ctx) {
       const hours = Math.ceil(reset.remainingMs / 3_600_000);
       setText(
         els.passwordResetHint,
-        `重置冷却中：约 ${hours} 小时后密码与本周额度将被重置，期间无法紧急解除。`,
+        `重置冷却中：约 ${hours} 小时后密码会被清空（本周额度不变）。这期间用正确密码仍可正常解除。`,
       );
       els.passwordResetHint.classList.add("hint--warn");
     } else {

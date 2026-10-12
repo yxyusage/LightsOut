@@ -369,12 +369,12 @@ const actions = {
     toast("密码已更新");
   },
 
-  /** 忘记密码：申请 24 小时后重置密码与本周额度 */
+  /** 忘记密码：申请 24 小时后清空密码（不影响本周额度） */
   requestPasswordReset() {
     const info = engine.requestPasswordReset();
     const remainingHours = Math.ceil(info.remainingMs / 3_600_000);
     if (info.pending) {
-      toast(`重置申请已生效：${remainingHours} 小时后密码与本周额度将被重置`, { duration: 5000 });
+      toast(`重置申请已生效：${remainingHours} 小时后密码将被清空，届时可设置新密码`, { duration: 5000 });
     }
     render();
     return info;
@@ -409,7 +409,6 @@ const actions = {
       "not-active": "当前不在熄灯时段内",
       "bad-password": "密码不正确",
       "quota-exhausted": "本周解除额度已用完，只能等熄灯时段结束",
-      "reset-pending": "忘记密码重置冷却中：24 小时后才能解除，请等待或耐心入睡",
     };
     return { ok: false, message: messages[result.reason] ?? "解除失败" };
   },
