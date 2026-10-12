@@ -61,6 +61,16 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+      「查看使用情况」：无障碍服务之外的**备用**前台应用检测通道。
+      厂商 ROM（尤其 HONOR / 华为）回收无障碍服务是常态，只靠无障碍会出现
+      "明明开了防护，上滑还是能逃掉"。有这条权限时可以用 UsageStatsManager 兜底轮询。
+      属于受保护权限，必须由用户在系统设置里手动授予，因此加 tools:ignore。
+    -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
     <application
         android:name=".XidengApp"
         android:allowBackup="false"
@@ -71,15 +81,37 @@
         android:theme="@style/Theme.Xideng"
         tools:targetApi="34">
 
-        <activity
-            android:name=".ui.MainActivity"
+        <!--
+          启动入口做成 activity-alias。
+          「隐藏桌面图标」是靠动态禁用这个别名实现的（Permissions.LAUNCHER_ALIAS）：
+          别名被禁用后桌面图标消失，但应用本身仍在后台运行，熄灯照常生效。
+          因此 LAUNCHER 的 intent-filter 必须挂在别名上，而不是 MainActivity 上。
+        -->
+        <activity-alias
+            android:name=".ui.LauncherAlias"
+            android:enabled="true"
             android:exported="true"
-            android:label="@string/app_name">
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:targetActivity=".ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name" />
+
+        <!-- 加固权限页（PRD 三）：把每项权限"不给会怎样"讲清楚 -->
+        <activity
+            android:name=".ui.HardeningActivity"
+            android:exported="false"
+            android:label="@string/hardening_title"
+            android:parentActivityName=".ui.MainActivity" />
 
         <!--
           黑屏主界面（PRD 2.2.2）。

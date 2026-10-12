@@ -26,6 +26,12 @@ jobs:
   build-apk:
     name: 构建 Debug APK
     runs-on: ubuntu-latest
+    # 签名相关 Secret 在 job 级注入：GitHub 不允许在 step 的 if 里直接引用 secrets
+    env:
+      SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+      SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+      SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+      SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -65,6 +71,25 @@ jobs:
           gradle wrapper --gradle-version 8.9 --no-daemon
           chmod +x gradlew
 
+      # 用固定密钥签名。
+      # 不配置的话 Android 会给每次构建生成一个新的 debug 密钥，用户装新版时必然
+      # 遇到 INSTALL_FAILED_UPDATE_INCOMPATIBLE（必须先卸载，数据全丢）。
+      # 未配置 Secret 时这一步跳过，构建照常走默认 debug 密钥 —— 不会让流水线挂掉。
+      - name: 配置固定签名
+        if: env.SIGNING_KEYSTORE_BASE64 != ''
+        working-directory: platforms/android
+        run: |
+          printf '%s' "$SIGNING_KEYSTORE_BASE64" | base64 -d > /tmp/xideng.jks
+          if [ ! -s /tmp/xideng.jks ]; then echo '密钥还原失败（base64 内容不对？）'; exit 1; fi
+          cat > keystore.properties <<EOF
+          storeFile=/tmp/xideng.jks
+          storePassword=$SIGNING_STORE_PASSWORD
+          keyAlias=$SIGNING_KEY_ALIAS
+          keyPassword=$SIGNING_KEY_PASSWORD
+          EOF
+          echo '已配置固定签名'
+          keytool -list -keystore /tmp/xideng.jks -storepass "$SIGNING_STORE_PASSWORD" | sed -n '3,6p' || true
+
       # 把构建输出同时写进文件，失败时才能把日志带出 CI。
       - name: 构建 Debug APK
         id: build
@@ -80,6 +105,11 @@ jobs:
           if ls app/build/outputs/apk/debug/*.apk >/dev/null 2>&1; then
             echo 'BUILD_OK=1' >> "$GITHUB_ENV"
             echo '构建成功，已产出 APK'
+            # 打印实际签名指纹：与"熄灯早睡-签名密钥"里那份核对得上，
+            # 才说明这个包以后可以覆盖安装。
+            APK=$(ls app/build/outputs/apk/debug/*.apk | head -1)
+            echo "APK=$APK"
+            "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$APK" 2>/dev/null | head -6 || true
           else
             echo 'BUILD_OK=0' >> "$GITHUB_ENV"
             echo '构建失败：没有产出 APK'

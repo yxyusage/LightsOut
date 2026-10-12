@@ -73,6 +73,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
+        // 首次使用：直接把人送到设置页，而且**不 tick**。
+        //
+        // 不 tick 是关键。tick 会做相位判定，而计划一旦生效（默认时段 23:00–07:00），
+        // 夜里首次启动就会被立刻拉进熄灯界面 —— 用户连主界面和权限清单都看不到，
+        // 权限一个都没授，防护自然形同虚设。这正是 BUG-1。
+        if (!graph.settingsStore.value.onboarded) {
+            toast("先花一分钟设好就寝时间与紧急解除密码")
+            startActivity(Intent(this, SettingsActivity::class.java))
+            return
+        }
+
         // 从主界面进来时顺手把前台服务与闹钟都安排上（用户在前台，启动前台服务一定合法）
         graph.controller.startLockService()
         graph.controller.tick("main-resume", force = true)

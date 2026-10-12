@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">熄灯早睡</string>
     <string name="settings_title">设置</string>
+    <string name="hardening_title">加固权限</string>
 
     <string name="accessibility_service_label">熄灯早睡 · 应用监听</string>
     <string name="accessibility_service_description">熄灯时段内检测到切换到非白名单应用时，立即把你送回熄灯界面。本服务只读取前台应用的包名，不读取屏幕内容，也不联网。</string>

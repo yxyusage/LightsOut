@@ -123,7 +123,8 @@ object SettingsJson {
         return Settings(
             version = readInt(raw, "version", Constants.SETTINGS_VERSION),
             plan = PlanSettings(
-                enabled = readBoolean(planRaw, "enabled", true),
+                // 缺省必须与 PlanSettings.enabled 保持一致，否则反序列化会把它读回 true
+                enabled = readBoolean(planRaw, "enabled", false),
                 windows = windowMap,
                 warnMinutes = readInt(planRaw, "warnMinutes", 15),
             ),

@@ -166,6 +166,17 @@ class LockController(private val context: Context, private val graph: AppGraph) 
 
     /** 把相位落到界面上 */
     private fun applyPhase(snapshot: EngineSnapshot, whitelistExhausted: Boolean) {
+        // 兜底门禁：用户从未主动启用过计划时，绝不熄灯。
+        //
+        // 只在 MainActivity 里拦是不够的 —— 闹钟、开机自启、前台服务心跳都会
+        // 直接走到这里，绕过 MainActivity。默认 plan.enabled = false 已经挡住了
+        // 大部分情况，这一层是防止数据被改回、或从旧版本升级上来的存量配置。
+        if (!snapshot.settings.onboarded) {
+            BlackoutActivity.requestDismiss()
+            WarningActivity.requestDismiss()
+            return
+        }
+
         // PRD 2.2.4：通话中放行。收起熄灯界面但服务继续运行，通话结束后的下一拍自动恢复。
         if (CallStateMonitor.isInCall(context)) {
             BlackoutActivity.requestDismiss()

@@ -68,7 +68,15 @@ class SettingsActivity : AppCompatActivity() {
         // onCheckedChanged(CompoundButton, Boolean)，写成子类 SwitchCompat 会编译不过。
         binding.switchPlanEnabled.setOnCheckedChangeListener { _: CompoundButton, checked: Boolean ->
             if (updatingUi) return@setOnCheckedChangeListener
-            graph.settingsStore.update { it.copy(plan = it.plan.copy(enabled = checked)) }
+            graph.settingsStore.update { settings ->
+                settings.copy(
+                    plan = settings.plan.copy(enabled = checked),
+                    // 主动打开计划就是他确实配置完了 —— 这是"引导完成"的信号。
+                    // 本项目没有独立的引导向导（设置页是即时保存的，没有"完成"按钮），
+                    // 所以用它来解除 LockController 的门禁。之后关掉计划不会撤销它。
+                    onboarded = if (checked) true else settings.onboarded,
+                )
+            }
             afterChange()
         }
         binding.btnWeekdayWindow.setOnClickListener { editWindow(DayType.WEEKDAY) }

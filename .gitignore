@@ -9,6 +9,10 @@ out/
 platforms/android/app/release/
 platforms/android/.gradle/
 platforms/android/local.properties
+# 签名配置（含口令），绝不入库；由 CI 从 GitHub Secret 现场生成
+platforms/android/keystore.properties
+*.jks
+*.keystore
 
 # ---- .NET ----
 bin/

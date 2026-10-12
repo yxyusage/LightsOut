@@ -16,7 +16,11 @@ fun defaultPlanWindows(): Map<DayType, PlanWindow> = mapOf(
 )
 
 data class PlanSettings(
-    val enabled: Boolean = true,
+    // 默认**关闭**。
+    // 早先默认是 true + 默认时段 23:00–07:00，于是"夜里第一次打开应用"的人
+    // 会直接被拉进熄灯界面，连设置页和权限清单都看不到 —— 权限一个都没授，
+    // 防护自然形同虚设。计划必须由用户主动打开。
+    val enabled: Boolean = false,
     val windows: Map<DayType, PlanWindow> = defaultPlanWindows(),
     val warnMinutes: Int = 15,
 ) {
