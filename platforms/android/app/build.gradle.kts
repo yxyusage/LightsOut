@@ -30,8 +30,11 @@ android {
         // PRD 6、兼容性：Android 10（API 29）及以上
         minSdk = 29
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        // 这一版开始用固定密钥签名，因此从 1 提上来：
+        // 用户可以在装了旧版的前提下直接覆盖升级（旧版用的是临时 debug 密钥，
+        // 那一次仍然需要先卸载）。
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
