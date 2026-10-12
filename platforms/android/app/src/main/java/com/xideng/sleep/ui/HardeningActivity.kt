@@ -133,14 +133,14 @@ class HardeningActivity : AppCompatActivity() {
 
         if (item.informational) {
             row.itemAction.visibility = View.GONE
-            row.isClickable = false
+            row.root.isClickable = false
         } else {
             row.itemAction.visibility = View.VISIBLE
             row.itemAction.text = if (item.granted) item.grantedLabel else item.actionLabel
             val action = item.action
             val listener = View.OnClickListener { action?.invoke() }
             row.itemAction.setOnClickListener(listener)
-            row.setOnClickListener(listener)
+            row.root.setOnClickListener(listener)
         }
         return row.root
     }
@@ -149,7 +149,7 @@ class HardeningActivity : AppCompatActivity() {
 
     private enum class Section(val title: String, val caption: String) {
         BASIC("基础权限（必须开启）", "不开，熄灯时你可能根本看不到接管界面。"),
-        KEEPALIVE("保活权限", "保证熄灯在夜间、重启后仍然生效，而不是"到点了却什么都没发生"。"),
+        KEEPALIVE("保活权限", "保证熄灯在夜间、重启后仍然生效，而不是“到点了却什么都没发生”。"),
         HARDEN("防破解权限", "提高绕过熄灯的成本。全部基于系统本身的机制，不做欺骗性的假开关。"),
     }
 
@@ -224,7 +224,7 @@ class HardeningActivity : AppCompatActivity() {
             Item(
                 section = Section.KEEPALIVE,
                 title = "关闭电池优化",
-                impact = "不加入白名单，夜间系统可能冻结本应用，出现"到点了没熄灯"。",
+                impact = "不加入白名单，夜间系统可能冻结本应用，出现“到点了没熄灯”。",
                 granted = Permissions.isIgnoringBatteryOptimizations(this),
                 action = { safeStart(Permissions.batteryOptimizationIntent(this)) },
             ),
@@ -241,7 +241,7 @@ class HardeningActivity : AppCompatActivity() {
             Item(
                 section = Section.KEEPALIVE,
                 title = "允许后台运行",
-                impact = "厂商的后台管理会把"长时间没打开"的应用清掉，熄灯可能中途被打断。在本应用条目里选择"手动管理"并允许后台活动。",
+                impact = "厂商的后台管理会把“长时间没打开”的应用清掉，熄灯可能中途被打断。在本应用条目里选择“手动管理”并允许后台活动。",
                 granted = false,
                 badge = "需手动确认",
                 actionLabel = "去设置",
@@ -275,7 +275,7 @@ class HardeningActivity : AppCompatActivity() {
                 section = Section.HARDEN,
                 title = "隐藏桌面图标",
                 impact = if (iconHidden) {
-                    "图标已隐藏。随时可以从熄灯通知，或系统的"设置 → 应用 → 熄灯早睡"进来点这里恢复。"
+                    "图标已隐藏。随时可以从熄灯通知，或系统的“设置 → 应用 → 熄灯早睡”进来点这里恢复。"
                 } else {
                     "眼不见心不烦。但要先确认通知权限已开——隐藏后只能从通知栏进入本应用。"
                 },

@@ -103,6 +103,18 @@ object Permissions {
         }
     }
 
+    /**
+     * 读取通话状态。
+     * PRD 2.2.4 要求"通话中放行"（来电话时熄灯界面让开，挂断后自动恢复），
+     * 判定是否在通话中需要这条权限；没有它时 [CallStateMonitor] 会保守地当作"没在通话"。
+     *
+     * 注：这一条在 Permissions.kt 被重写时被漏掉了，而 CallStateMonitor 与 MainActivity
+     * 都还在调用它 —— 编译期就会报 Unresolved reference，所以必须补回来。
+     */
+    fun hasPhoneStatePermission(context: Context): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) ==
+            PackageManager.PERMISSION_GRANTED
+
     /** 通知权限（Android 13+ 需运行时授予）。没有它熄灯仍生效，只是看不到常驻通知。 */
     fun hasNotificationPermission(context: Context): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
