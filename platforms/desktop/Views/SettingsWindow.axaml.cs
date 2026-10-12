@@ -32,33 +32,6 @@ public partial class SettingsWindow : Window
         ("bg-firefly-1", "萤火虫 · 森林", "avares://Xideng.Desktop/assets/backgrounds/bg-firefly-1.png"),
     ];
 
-    /// <summary>滚轮时间候选：5 分钟步进，00:00 … 23:55（共 288 项）。</summary>
-    private static readonly string[] TimeSteps = BuildTimeSteps();
-
-    private static string[] BuildTimeSteps()
-    {
-        var steps = new List<string>(288);
-        for (var minutes = 0; minutes < TimeUtil.MinutesPerDay; minutes += 5)
-        {
-            steps.Add(TimeUtil.FromMinutes(minutes));
-        }
-        return steps.ToArray();
-    }
-
-    /// <summary>把 "23:00" 换算成滚轮索引；非法值回退到最近 5 分钟步进。</summary>
-    private static int TimeStepIndex(string? hhmm)
-    {
-        if (TimeUtil.TryToMinutes(hhmm, out var minutes))
-        {
-            var step = (int)Math.Round(minutes / 5d) * 5;
-            return Math.Clamp(step / 5, 0, TimeSteps.Length - 1);
-        }
-        return TimeSteps.Length / 2; // 正午 12:00
-    }
-
-    private static void LoadWheel(TimeWheel wheel, string? hhmm) =>
-        wheel.SetItems(TimeSteps, TimeStepIndex(hhmm));
-
     /// <summary>供 XAML 设计器 / 加载器使用。</summary>
     public SettingsWindow()
         : this(new DesktopCoordinator())
@@ -106,10 +79,10 @@ public partial class SettingsWindow : Window
         var settings = _coordinator.Settings.Value;
 
         PlanEnabledCheck.IsChecked = settings.Plan.Enabled;
-        LoadWheel(WeekdayStartWheel, settings.Plan.Windows[DayType.Weekday].Start);
-        LoadWheel(WeekdayEndWheel, settings.Plan.Windows[DayType.Weekday].End);
-        LoadWheel(WeekendStartWheel, settings.Plan.Windows[DayType.Weekend].Start);
-        LoadWheel(WeekendEndWheel, settings.Plan.Windows[DayType.Weekend].End);
+        WeekdayStartWheel.SetValue(settings.Plan.Windows[DayType.Weekday].Start);
+        WeekdayEndWheel.SetValue(settings.Plan.Windows[DayType.Weekday].End);
+        WeekendStartWheel.SetValue(settings.Plan.Windows[DayType.Weekend].Start);
+        WeekendEndWheel.SetValue(settings.Plan.Windows[DayType.Weekend].End);
         SundayAsWeekdayCheck.IsChecked = settings.Plan.SundayAsWeekday;
 
         var warnIndex = Array.IndexOf(Limits.WarnMinuteOptions, settings.Plan.WarnMinutes);

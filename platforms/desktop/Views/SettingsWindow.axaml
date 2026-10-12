@@ -23,16 +23,16 @@
       <TabItem Header="睡眠计划">
         <StackPanel Margin="6,14,6,6" Spacing="12">
           <CheckBox x:Name="PlanEnabledCheck" Content="启用熄灯计划" />
-          <Grid ColumnDefinitions="96,88,88" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12">
-            <TextBlock Grid.Row="0" Grid.Column="1" Text="开始（滚轮选择）" Foreground="#9A9A9A" FontSize="11" />
-            <TextBlock Grid.Row="0" Grid.Column="2" Text="结束（滚轮选择）" Foreground="#9A9A9A" FontSize="11" />
+          <Grid ColumnDefinitions="96,168,168" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12">
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="开始（时/分滚轮，可输数字）" Foreground="#9A9A9A" FontSize="11" />
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="结束（时/分滚轮，可输数字）" Foreground="#9A9A9A" FontSize="11" />
             <TextBlock Grid.Row="1" Grid.Column="0" Text="工作日" VerticalAlignment="Top" Margin="0,34,0,0" Foreground="#CCCCCC" />
             <views:TimeWheel Grid.Row="1" Grid.Column="1" x:Name="WeekdayStartWheel" />
             <views:TimeWheel Grid.Row="1" Grid.Column="2" x:Name="WeekdayEndWheel" />
             <TextBlock Grid.Row="2" Grid.Column="0" Text="周末" VerticalAlignment="Top" Margin="0,34,0,0" Foreground="#CCCCCC" />
             <views:TimeWheel Grid.Row="2" Grid.Column="1" x:Name="WeekendStartWheel" />
             <views:TimeWheel Grid.Row="2" Grid.Column="2" x:Name="WeekendEndWheel" />
-            <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="熄灯时段必须跨越午夜（如 23:00 → 次日 07:00），时长 30 分钟 – 16 小时。"
+            <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="熄灯时段必须跨越午夜（如 23:00 → 次日 07:00），时长 30 分钟 – 16 小时。滚动切换、点选列后可直接敲数字（如 2 3 回车到 23，再切到分钟列输 05）。"
                        Foreground="#6E6E6E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0" />
           </Grid>
           <CheckBox x:Name="SundayAsWeekdayCheck" Content="周日晚按工作日执行（默认开：周一要早起，周日晚上不松懈）" />
