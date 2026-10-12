@@ -1,19 +1,34 @@
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Xideng.Desktop.Core;
 using Xideng.Desktop.Platform;
 
 namespace Xideng.Desktop.Views;
 
 /// <summary>
-/// 设置窗口：时段设置、提前提醒、白名单管理、紧急解除密码、开机自启（PRD 2.1 / 2.2.3 / 2.2.5 / 5.2 / 5.3）。
+/// 设置窗口：时段设置、周日晚开关、提前提醒、白名单管理、紧急解除密码、
+/// 外观背景、开机自启（PRD 2.1 / 2.2.3 / 2.2.5 / 5.2 / 5.3）。
 /// 全部控件在代码后置中直接读写，不使用绑定，以降低 XAML 编译期的风险面。
 /// </summary>
 public partial class SettingsWindow : Window
 {
     private readonly DesktopCoordinator _coordinator;
     private bool _loading;
+
+    /// <summary>内置背景选项：id → (显示名, avares 资源路径；"dark" 表示纯深色)。</summary>
+    private static readonly (string Id, string Name, string? Uri)[] BackgroundOptions =
+    [
+        ("dark", "深色（默认）", null),
+        ("bg-aurora-1", "极光 · 水面倒影", "avares://Xideng.Desktop/assets/backgrounds/bg-aurora-1.png"),
+        ("bg-aurora-2", "极光 · 蓝紫渐变", "avares://Xideng.Desktop/assets/backgrounds/bg-aurora-2.png"),
+        ("bg-star-1", "星空 · 银河核心", "avares://Xideng.Desktop/assets/backgrounds/bg-star-1.png"),
+        ("bg-star-2", "星空 · 银河横跨", "avares://Xideng.Desktop/assets/backgrounds/bg-star-2.png"),
+        ("bg-star-3", "星空 · 密集繁星", "avares://Xideng.Desktop/assets/backgrounds/bg-star-3.png"),
+        ("bg-firefly-1", "萤火虫 · 森林", "avares://Xideng.Desktop/assets/backgrounds/bg-firefly-1.png"),
+    ];
 
     /// <summary>供 XAML 设计器 / 加载器使用。</summary>
     public SettingsWindow()
@@ -27,6 +42,7 @@ public partial class SettingsWindow : Window
         InitializeComponent();
 
         WarnMinutesCombo.ItemsSource = Limits.WarnMinuteOptions.Select(minutes => $"{minutes} 分钟").ToList();
+        AppearanceCombo.ItemsSource = BackgroundOptions.Select(option => option.Name).ToList();
 
         SaveButton.Click += (_, _) => Save();
         TestBlackoutButton.Click += (_, _) => TestBlackout();
@@ -36,6 +52,14 @@ public partial class SettingsWindow : Window
         RemoveAppButton.Click += (_, _) => RemoveSelectedApp();
         SetPasswordButton.Click += (_, _) => SetPassword();
         AutoStartCheck.IsCheckedChanged += (_, _) => ApplyAutoStart();
+        AppearanceCombo.SelectionChanged += (_, _) => ApplyBackground();
+        BrightnessSlider.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == Avalonia.Controls.Primitives.RangeBase.ValueProperty)
+            {
+                BrightnessValueText.Text = Math.Round(BrightnessSlider.Value, 2).ToString("0.00");
+            }
+        };
 
         _coordinator.Updated += _ => RefreshLiveStatus();
         _coordinator.Notice += message => StatusText.Text = message;
@@ -56,9 +80,16 @@ public partial class SettingsWindow : Window
         WeekdayEndBox.Text = settings.Plan.Windows[DayType.Weekday].End;
         WeekendStartBox.Text = settings.Plan.Windows[DayType.Weekend].Start;
         WeekendEndBox.Text = settings.Plan.Windows[DayType.Weekend].End;
+        SundayAsWeekdayCheck.IsChecked = settings.Plan.SundayAsWeekday;
 
         var warnIndex = Array.IndexOf(Limits.WarnMinuteOptions, settings.Plan.WarnMinutes);
         WarnMinutesCombo.SelectedIndex = warnIndex >= 0 ? warnIndex : 1;
+
+        var bgIndex = Array.FindIndex(BackgroundOptions, option => option.Id == settings.Appearance.BackgroundId);
+        AppearanceCombo.SelectedIndex = bgIndex >= 0 ? bgIndex : 0;
+
+        BrightnessSlider.Value = Math.Clamp(settings.Blackout.Brightness, 0.15, 1);
+        BrightnessValueText.Text = Math.Round(BrightnessSlider.Value, 2).ToString("0.00");
 
         WhitelistMinutesBox.Text = settings.Whitelist.TotalMinutes.ToString(System.Globalization.CultureInfo.InvariantCulture);
         ProcessWatchCheck.IsChecked = settings.Desktop.ProcessWatch;
@@ -124,12 +155,19 @@ public partial class SettingsWindow : Window
             settings.Plan.Enabled = PlanEnabledCheck.IsChecked ?? false;
             settings.Plan.Windows[DayType.Weekday] = new WindowConfig { Start = WeekdayStartBox.Text!.Trim(), End = WeekdayEndBox.Text!.Trim() };
             settings.Plan.Windows[DayType.Weekend] = new WindowConfig { Start = WeekendStartBox.Text!.Trim(), End = WeekendEndBox.Text!.Trim() };
+            settings.Plan.SundayAsWeekday = SundayAsWeekdayCheck.IsChecked ?? true;
 
             var warnIndex = WarnMinutesCombo.SelectedIndex;
             settings.Plan.WarnMinutes = warnIndex >= 0 && warnIndex < Limits.WarnMinuteOptions.Length
                 ? Limits.WarnMinuteOptions[warnIndex]
                 : 15;
 
+            var bgIndex = AppearanceCombo.SelectedIndex;
+            settings.Appearance.BackgroundId = bgIndex >= 0 && bgIndex < BackgroundOptions.Length
+                ? BackgroundOptions[bgIndex].Id
+                : "dark";
+
+            settings.Blackout.Brightness = Math.Clamp(BrightnessSlider.Value, 0.15, 1);
             settings.Whitelist.TotalMinutes = Math.Clamp(whitelistMinutes, Limits.WhitelistTotalMinutesMin, Limits.WhitelistTotalMinutesMax);
             settings.Desktop.ProcessWatch = ProcessWatchCheck.IsChecked ?? false;
             settings.Desktop.AutoStart = AutoStartCheck.IsChecked ?? false;
@@ -150,6 +188,44 @@ public partial class SettingsWindow : Window
         LoadFromSettings();
         StatusText.Foreground = new SolidColorBrush(Color.Parse("#9AD19A"));
         StatusText.Text = "已恢复默认设置。";
+    }
+
+    // ── 外观 ──────────────────────────────────────────────
+
+    /// <summary>根据当前选择的背景 id 即时预览窗口背景。</summary>
+    private void ApplyBackground()
+    {
+        var index = AppearanceCombo.SelectedIndex;
+        if (index < 0 || index >= BackgroundOptions.Length)
+        {
+            Background = new SolidColorBrush(Color.Parse("#111111"));
+            return;
+        }
+
+        var option = BackgroundOptions[index];
+        if (option.Uri is null)
+        {
+            Background = new SolidColorBrush(Color.Parse("#111111"));
+            return;
+        }
+
+        try
+        {
+            var uri = new Uri(option.Uri);
+            using var stream = AssetLoader.Open(uri);
+            var bitmap = new Bitmap(stream);
+            Background = new ImageBrush(bitmap)
+            {
+                Stretch = Stretch.UniformToFill,
+                AlignmentX = AlignmentX.Center,
+                AlignmentY = AlignmentY.Center,
+            };
+        }
+        catch (Exception)
+        {
+            // 资源缺失时回落到深色背景，不阻塞设置窗口
+            Background = new SolidColorBrush(Color.Parse("#111111"));
+        }
     }
 
     // ── 白名单 ──────────────────────────────────────────────

@@ -209,6 +209,10 @@
     <section class="card">
       <h2><svg class="card__icon"><use href="#i-bulb" /></svg>睡眠时段</h2>
       <div class="field-group" id="home-windows"></div>
+      <label class="check">
+        <input type="checkbox" id="home-sunday-as-weekday" />
+        <span>周日晚按工作日执行（周一要早起，周日晚上不松懈）</span>
+      </label>
       <div class="field">
         <label>提前提醒</label>
         <div class="chips" id="home-warn"></div>
@@ -280,6 +284,12 @@
     </section>
 
     <section class="card">
+      <h2>本周坚持</h2>
+      <div class="week-grid" id="week-review"></div>
+      <p class="hint" id="week-review-summary">—</p>
+    </section>
+
+    <section class="card">
       <h2>白名单今日用量</h2>
       <div class="meter"><div class="meter__fill" id="budget-fill"></div></div>
       <p class="hint" id="budget-hint">—</p>
@@ -293,6 +303,8 @@
       </div>
       <button type="button" class="btn btn--block" id="btn-save-password">保存密码</button>
       <p class="hint" id="password-hint"></p>
+      <button type="button" class="btn btn--ghost btn--block" id="btn-forgot-password">忘记密码？申请 24 小时后重置</button>
+      <p class="hint" id="password-reset-hint"></p>
     </section>
 
     <section class="card">

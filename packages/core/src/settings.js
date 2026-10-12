@@ -80,6 +80,11 @@ export function migrateSettings(raw) {
   // --- emergency ---
   merged.emergency.passwordHash = typeof merged.emergency.passwordHash === "string" ? merged.emergency.passwordHash : "";
   merged.emergency.quotaTotal = clampNumber(merged.emergency.quotaTotal, 0, 14, DEFAULT_SETTINGS.emergency.quotaTotal);
+  // 忘记密码重置申请时间戳：只接受合法数字，其余一律视为未申请
+  merged.emergency.passwordResetAt =
+    typeof merged.emergency.passwordResetAt === "number" && Number.isFinite(merged.emergency.passwordResetAt)
+      ? merged.emergency.passwordResetAt
+      : null;
 
   // --- guard ---
   merged.guard.reassertOnVisible = Boolean(merged.guard.reassertOnVisible);

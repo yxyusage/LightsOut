@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Xideng.Desktop.Views.BlackoutWindow"
         Title="熄灯早睡"
+        Icon="avares://Xideng.Desktop/assets/tray.png"
         Background="Black"
         SystemDecorations="None"
         CanResize="False"
@@ -12,6 +13,17 @@
 
     <!-- 渐暗层：入场时由深灰渐隐到纯黑（PRD 4.3「屏幕同步渐暗至全黑」） -->
     <Border x:Name="DimLayer" Background="#1C1C1C" />
+
+    <!-- 暖光层：熄灯过渡时灯泡的温暖光线随灯亮弱渐变，增强"灯熄灭"的光影感受 -->
+    <Border x:Name="WarmGlow" IsHitTestVisible="False" Opacity="0">
+      <Border.Background>
+        <RadialGradientBrush Center="0.5,0.42" GradientOrigin="0.5,0.42" RadiusX="0.62" RadiusY="0.62">
+          <GradientStop Offset="0" Color="#55FFE9B0" />
+          <GradientStop Offset="0.4" Color="#2EFFC97A" />
+          <GradientStop Offset="1" Color="#00000000" />
+        </RadialGradientBrush>
+      </Border.Background>
+    </Border>
 
     <!-- 入场 / 退场动画：垂下的灯绳与灯泡 -->
     <Grid x:Name="LampLayer"
@@ -90,6 +102,46 @@
         </StackPanel>
       </StackPanel>
     </Border>
+
+    <!-- 拉绳交互层：主题是一根线——顶部吸点横条、一根垂绳 + 末端坠、
+         竖排引导文案（绳旁）、倒计时提示；无标语（PRD 2.2.1 增强） -->
+    <Grid x:Name="PullLayer" IsVisible="False">
+      <!-- 顶部"吸住"横条 + 挂点 -->
+      <Rectangle Height="2" Fill="#3A3A3A" VerticalAlignment="Top" Margin="0,70,0,0" />
+      <Ellipse Width="7" Height="7" Fill="#BFA882" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,65,0,0" />
+
+      <!-- 拉绳组：绳 + 末端坠，可随拖动下移 -->
+      <StackPanel x:Name="PullCordGroup"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Top"
+                  Margin="0,70,0,0">
+        <Rectangle x:Name="PullCord" Width="2" Height="200" Fill="#7A5A38" HorizontalAlignment="Center" />
+        <Ellipse x:Name="PullBead" Width="18" Height="18" Fill="#FFD7A0" HorizontalAlignment="Center" Margin="0,10,0,0" />
+      </StackPanel>
+
+      <!-- 竖排引导文案：从上往下，放在拉绳右侧 -->
+      <StackPanel x:Name="PullHintVertical"
+                  Orientation="Vertical"
+                  Spacing="5"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Margin="112,0,0,0">
+        <TextBlock Text="拖" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
+        <TextBlock Text="动" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
+        <TextBlock Text="拉" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
+        <TextBlock Text="绳" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
+        <TextBlock Text="，" FontSize="16" FontWeight="Light" Foreground="#6E6E6E" />
+        <TextBlock Text="熄" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
+        <TextBlock Text="灭" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
+        <TextBlock Text="灯" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
+        <TextBlock Text="光" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
+      </StackPanel>
+
+      <!-- 倒计时：绳下方 -->
+      <TextBlock x:Name="PullCountdown" Text=""
+                 FontSize="13" Foreground="#6E6E6E"
+                 HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,56" />
+    </Grid>
 
     <!-- 提示条 -->
     <Border x:Name="NoticeBar"

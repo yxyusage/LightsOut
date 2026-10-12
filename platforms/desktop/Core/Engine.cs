@@ -83,7 +83,8 @@ public sealed class Engine
             settings.Plan,
             now,
             settings.Plan.WarnMinutes,
-            _dismissedWindowKey);
+            _dismissedWindowKey,
+            sundayAsWeekday: settings.Plan.SundayAsWeekday);
         var scene = SceneDetector.Detect(now);
         EnsurePlaylist(scene);
 
@@ -161,7 +162,8 @@ public sealed class Engine
             settings.Plan,
             now,
             settings.Plan.WarnMinutes,
-            _dismissedWindowKey);
+            _dismissedWindowKey,
+            sundayAsWeekday: settings.Plan.SundayAsWeekday);
         if (phaseInfo.Phase != Core.Phase.Active)
         {
             return new UnlockResult(false, 0, "not-active");

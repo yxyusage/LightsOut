@@ -14,6 +14,7 @@ export * from "./scene.js";
 export * from "./copy.js";
 export * from "./quota.js";
 export * from "./whitelist.js";
+export * from "./sleep.js";
 export * from "./storage.js";
 export * from "./settings.js";
 export * from "./password.js";

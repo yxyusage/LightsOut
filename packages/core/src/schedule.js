@@ -24,13 +24,17 @@ import {
 /**
  * 判定某一天按哪套时段执行。
  *
- * 相比 PRD 的"工作日/周末"二分，这里多加了一层**调休上班日**处理：
- * 法定调休把某个周六变成上班日，用户当天仍在上班，晚上理应按工作日时段熄灯。
- * 若希望严格照搬 PRD 字面语义，把 `respectMakeupWorkdays` 设为 false 即可。
+ * 相比 PRD 的"工作日/周末"二分，这里多加了两层处理：
+ * - **调休上班日**：法定调休把某个周六变成上班日，用户当天仍在上班，晚上理应按工作日时段熄灯；
+ *   若希望严格照搬 PRD 字面语义，把 `respectMakeupWorkdays` 设为 false 即可。
+ * - **周日晚按工作日**（`sundayAsWeekday`，默认开）：多数用户周一要早起上班，
+ *   周日晚上若套用"周末晚睡时段"会失去保护，因此把周日开启的时段按工作日配置执行；
+ *   周六仍按周末配置。
  */
 export function dayTypeOf(date, options = {}) {
-  const { respectMakeupWorkdays = true } = options;
+  const { respectMakeupWorkdays = true, sundayAsWeekday = true } = options;
   if (respectMakeupWorkdays && isMakeupWorkday(date)) return DAY_TYPE.WEEKDAY;
+  if (sundayAsWeekday && date.getDay() === 0) return DAY_TYPE.WEEKDAY;
   return isWeekend(date) ? DAY_TYPE.WEEKEND : DAY_TYPE.WEEKDAY;
 }
 
@@ -111,8 +115,9 @@ export function phaseAt(plan, now, options = {}) {
     warnMinutes = plan?.warnMinutes ?? 0,
     dismissedWindowKey = null,
     respectMakeupWorkdays = true,
+    sundayAsWeekday = true,
   } = options;
-  const scheduleOptions = { respectMakeupWorkdays };
+  const scheduleOptions = { respectMakeupWorkdays, sundayAsWeekday };
 
   if (!plan?.enabled) {
     return { phase: PHASE.OFF, window: null, remainingMs: 0, warnMs: 0, dismissed: false };

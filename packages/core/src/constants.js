@@ -77,6 +77,9 @@ export const EMERGENCY_TAP_COUNT = 5;
 /** 连续点击的有效时间窗（毫秒）——超出视为重新计数 */
 export const EMERGENCY_TAP_WINDOW_MS = 3000;
 
+/** 忘记密码后的重置冷却时长：等待 24 小时才能重置密码与本周额度（防止靠重置免费越狱） */
+export const PASSWORD_RESET_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
 /** 默认紧急解除密码。首次启动引导会要求用户修改。 */
 export const DEFAULT_EMERGENCY_PASSWORD = "0000";
 
@@ -104,6 +107,8 @@ export const DEFAULT_SETTINGS = {
       [DAY_TYPE.WEEKEND]: { start: "23:00", end: "07:00" },
     },
     warnMinutes: 15,
+    /** 周日晚按工作日执行（默认开）：周一要早起，周日晚上不松懈 */
+    sundayAsWeekday: true,
   },
 
   /** 黑屏界面表现 */
@@ -143,6 +148,8 @@ export const DEFAULT_SETTINGS = {
     /** WebCrypto SHA-256 摘要；空字符串表示尚未设置 */
     passwordHash: "",
     quotaTotal: WEEKLY_QUOTA_TOTAL,
+    /** 忘记密码重置申请的时间戳（毫秒）；null 表示未申请。24 小时后自动重置密码与本周额度 */
+    passwordResetAt: null,
   },
 
   /** 防绕过，PRD 三 */

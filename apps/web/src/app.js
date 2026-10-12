@@ -54,7 +54,15 @@ const budget = core.createWhitelistBudget({
   },
 });
 
-const engine = core.createEngine({ settingsStore, quotaStore });
+/** 每日睡眠记录：本周坚持回顾的数据源 */
+const sleepRecords = core.createSleepRecords({ storage: settingsStore.storage });
+
+const engine = core.createEngine({
+  settingsStore,
+  quotaStore,
+  // 白名单剩余时长以真实预算为准（跨午夜时段共用一个额度池，见 whitelist.js 注释）
+  getWhitelistRemainingMs: () => budget.remainingMs(new Date()),
+});
 const audio = core.createAudioEngine();
 const ai = core.createAIClient({
   getConfig: () => settingsStore.value.ai,
@@ -82,6 +90,8 @@ const ui = {
   /** 检测到改时间后冻结到的时刻——在此之前一律视为熄灯中 */
   freezeUntil: null,
   lastActiveWindowEnd: null,
+  /** 本周回顾：最近一次已记录的熄灯时段键（同一时段只记一次"进入"） */
+  lastRecordedWindowKey: null,
   whitelistSession: null,
   wakeLockSentinel: null,
   disposers: [],
@@ -131,6 +141,7 @@ const ctx = {
   settingsStore,
   quotaStore,
   budget,
+  sleepRecords,
   engine,
   audio,
   ai,
@@ -210,6 +221,11 @@ const actions = {
 
   setWarnMinutes(minutes) {
     settingsStore.update({ plan: { warnMinutes: minutes } });
+    render();
+  },
+
+  setSundayAsWeekday(enabled) {
+    settingsStore.update({ plan: { sundayAsWeekday: enabled } });
     render();
   },
 
@@ -353,6 +369,17 @@ const actions = {
     toast("密码已更新");
   },
 
+  /** 忘记密码：申请 24 小时后重置密码与本周额度 */
+  requestPasswordReset() {
+    const info = engine.requestPasswordReset();
+    const remainingHours = Math.ceil(info.remainingMs / 3_600_000);
+    if (info.pending) {
+      toast(`重置申请已生效：${remainingHours} 小时后密码与本周额度将被重置`, { duration: 5000 });
+    }
+    render();
+    return info;
+  },
+
   async finishOnboarding(password) {
     const hash = await core.hashPassword(password);
     settingsStore.update({ emergency: { passwordHash: hash }, onboarded: true });
@@ -372,6 +399,7 @@ const actions = {
   async submitEmergency(password) {
     const result = await engine.emergencyUnlock(password);
     if (result.ok) {
+      sleepRecords.record(core.dateKey(new Date()), { dismissed: true });
       toast(`已解除，本周还剩 ${result.remaining} 次`);
       render();
       return { ok: true };
@@ -381,6 +409,7 @@ const actions = {
       "not-active": "当前不在熄灯时段内",
       "bad-password": "密码不正确",
       "quota-exhausted": "本周解除额度已用完，只能等熄灯时段结束",
+      "reset-pending": "忘记密码重置冷却中：24 小时后才能解除，请等待或耐心入睡",
     };
     return { ok: false, message: messages[result.reason] ?? "解除失败" };
   },
@@ -390,6 +419,7 @@ const actions = {
     settingsStore.reset();
     quotaStore.reset(new Date());
     budget.reset(new Date());
+    sleepRecords.reset();
     ai.clearCache();
     try {
       sessionStore.clear?.();
@@ -468,6 +498,14 @@ async function applyPhase(snapshot) {
 
   if (next === "blackout") {
     document.body.classList.add("is-locked");
+    // 记录"今天真正进入熄灯"（同一时段只记一次；演示模式不污染真实数据）
+    if (!isDemo()) {
+      const windowKey = snapshot.window?.startKey;
+      if (windowKey && ui.lastRecordedWindowKey !== windowKey) {
+        ui.lastRecordedWindowKey = windowKey;
+        sleepRecords.record(core.dateKey(snapshot.at), { entered: true });
+      }
+    }
     if (previous !== "blackout") {
       await lamp.playEnter();
       if (ui.phaseToken !== token) return;

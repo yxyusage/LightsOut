@@ -8,7 +8,7 @@
  *  - 测试里用伪造时钟任意"穿越时间"驱动它。
  */
 
-import { COPY_ROTATE_MS, PHASE } from "./constants.js";
+import { COPY_ROTATE_MS, PASSWORD_RESET_COOLDOWN_MS, PHASE } from "./constants.js";
 import { buildPlaylist, createRotator, hashString } from "./copy.js";
 import { verifyPassword } from "./password.js";
 import { detectScene } from "./scene.js";
@@ -19,10 +19,11 @@ import { phaseAt } from "./schedule.js";
  *   settingsStore: {value: object},
  *   quotaStore: object,
  *   now?: () => Date,
- *   copyIntervalMs?: number
+ *   copyIntervalMs?: number,
+ *   getWhitelistRemainingMs?: () => number
  * }} options
  */
-export function createEngine({ settingsStore, quotaStore, now = () => new Date(), copyIntervalMs } = {}) {
+export function createEngine({ settingsStore, quotaStore, now = () => new Date(), copyIntervalMs, getWhitelistRemainingMs } = {}) {
   /** 被紧急解除的时段键（该时段开始日的 YYYY-MM-DD）；null 表示未解除 */
   let dismissedWindowKey = null;
 
@@ -31,6 +32,47 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
   let rotator = null;
   /** AI 生成的文案，优先级高于本地轮播 */
   let aiText = null;
+
+  // ── 忘记密码兜底（PRD 增强）：等待 24 小时重置密码与本周额度 ──
+
+  /**
+   * 惰性结算：若重置申请已过 24 小时冷却，则清空密码、重置本周额度、清除申请。
+   * 在快照与解除入口处都会被调用，保证"到期即生效"不依赖额外定时器。
+   * @returns {boolean} 是否刚完成了一次结算。
+   */
+  function settlePasswordReset(at) {
+    const requestedAt = settingsStore.value.emergency?.passwordResetAt;
+    if (!requestedAt || typeof requestedAt !== "number") return false;
+    if (at.getTime() - requestedAt < PASSWORD_RESET_COOLDOWN_MS) return false;
+
+    settingsStore.update({ emergency: { passwordResetAt: null, passwordHash: "" } });
+    quotaStore.reset(at);
+    return true;
+  }
+
+  /**
+   * 忘记密码重置状态。
+   * @returns {{pending: boolean, remainingMs: number, requestedAt: number|null}}
+   */
+  function passwordResetInfo(at) {
+    settlePasswordReset(at);
+    const requestedAt = settingsStore.value.emergency?.passwordResetAt;
+    if (!requestedAt || typeof requestedAt !== "number") {
+      return { pending: false, remainingMs: 0, requestedAt: null };
+    }
+    return {
+      pending: true,
+      remainingMs: Math.max(0, PASSWORD_RESET_COOLDOWN_MS - (at.getTime() - requestedAt)),
+      requestedAt,
+    };
+  }
+
+  /** 申请重置（已有未到期的申请时不重复覆盖）。 */
+  function requestPasswordReset(at) {
+    if (passwordResetInfo(at).pending) return passwordResetInfo(at);
+    settingsStore.update({ emergency: { passwordResetAt: at.getTime() } });
+    return passwordResetInfo(at);
+  }
 
   function ensurePlaylist(scene) {
     const key = `${scene.dateKey}|${scene.scene}`;
@@ -55,6 +97,7 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
     const phaseInfo = phaseAt(settings.plan, at, {
       warnMinutes: settings.plan.warnMinutes,
       dismissedWindowKey,
+      sundayAsWeekday: settings.plan.sundayAsWeekday,
     });
     const scene = detectScene(at);
     ensurePlaylist(scene);
@@ -68,6 +111,7 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
       settings,
       scene,
       quota: quotaStore.snapshot(at),
+      passwordReset: passwordResetInfo(at),
       phase: phaseInfo.phase,
       window: phaseInfo.window,
       remainingMs: phaseInfo.remainingMs,
@@ -78,8 +122,13 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
       copy,
       copyIntervalMs: rotator.intervalMs,
       copyTotal: rotator.length,
-      /** 白名单剩余可用时长（秒），仅统计占用额度的应用 */
-      whitelistRemainingMs: Math.max(0, settings.whitelist.totalMinutes * 60_000),
+      /** 白名单剩余可用时长（秒），仅统计占用额度的应用。
+       *  由应用层注入真实预算读取（app.js 传入 budget.remainingMs）；
+       *  未注入时回退为总额，避免出现"负剩余"的误导。 */
+      whitelistRemainingMs: Math.max(0,
+        getWhitelistRemainingMs
+          ? getWhitelistRemainingMs()
+          : settings.whitelist.totalMinutes * 60_000),
     };
   }
 
@@ -122,12 +171,16 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
     async emergencyUnlock(password) {
       const settings = settingsStore.value;
 
+      const at = now();
+      // 重置冷却期间禁止解除（否则"忘记密码"就成了免费越狱通道）
+      if (passwordResetInfo(at).pending) return { ok: false, reason: "reset-pending" };
+
       if (!settings.emergency.passwordHash) return { ok: false, reason: "no-password" };
 
-      const at = now();
       const phaseInfo = phaseAt(settings.plan, at, {
         warnMinutes: settings.plan.warnMinutes,
         dismissedWindowKey,
+        sundayAsWeekday: settings.plan.sundayAsWeekday,
       });
       if (phaseInfo.phase !== PHASE.ACTIVE) return { ok: false, reason: "not-active" };
 
@@ -145,6 +198,16 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
     /** 重新武装（跨时段或用户手动恢复计划时调用） */
     rearm() {
       dismissedWindowKey = null;
+    },
+
+    /** 忘记密码：申请 24 小时后重置密码与本周额度 */
+    requestPasswordReset() {
+      return requestPasswordReset(now());
+    },
+
+    /** 忘记密码重置状态（pending / remainingMs） */
+    passwordResetInfo() {
+      return passwordResetInfo(now());
     },
 
     /** 供调试面板查看 */

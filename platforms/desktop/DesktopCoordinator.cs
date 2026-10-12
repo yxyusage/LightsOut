@@ -40,6 +40,7 @@ public sealed class DesktopCoordinator : IDisposable
     private bool _disposed;
     private bool _watcherRunning;
     private bool _wasActive;
+    private bool _enteringBlackout;
     private DateTime _nextCopyRotateAt = DateTime.MinValue;
     private DateTime _nextTopmostRefreshAt = DateTime.MinValue;
     private DateTime _previewUntil = DateTime.MinValue;
@@ -121,6 +122,8 @@ public sealed class DesktopCoordinator : IDisposable
         {
             Engine.ResetCopy(now);
             _nextCopyRotateAt = now.AddMilliseconds(Math.Max(1000, probe.CopyIntervalMs));
+            // 新时段开始：本次进入要求用户亲手拉绳（熄灯仪式）
+            _enteringBlackout = true;
         }
         else if (active && now >= _nextCopyRotateAt)
         {
@@ -168,9 +171,16 @@ public sealed class DesktopCoordinator : IDisposable
 
         foreach (var window in _blackoutWindows)
         {
+            if (_enteringBlackout)
+            {
+                window.RequirePull();
+            }
+
             window.PresentForBlackout();
             window.ApplySnapshot(snapshot);
         }
+
+        _enteringBlackout = false;
 
         // 周期性轻量重申置顶（不抢焦点）；真正的强制抢占由前台进程监听触发。
         // 若每 250ms 都 Activate()，用户将完全无法使用白名单应用。

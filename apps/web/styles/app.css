@@ -414,6 +414,27 @@ input[type="range"]::-moz-range-thumb {
 .quota__pip.is-filled { border-color: rgba(255, 190, 106, 0.55); background: rgba(255, 190, 106, 0.12); color: var(--lamp); }
 .quota__pip svg { width: 15px; height: 15px; }
 
+/* 本周坚持回顾：自然周 7 天点阵 */
+.week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.week-grid__cell {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 4px 8px; border-radius: 10px;
+  border: 1px solid var(--line-strong); background: var(--surface-1);
+}
+.week-grid__mark {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 600;
+  border: 1px solid var(--line-strong); color: var(--text-faint);
+}
+.week-grid__label { font-size: 0.68rem; color: var(--text-dim); }
+.week-grid__cell.is-kept .week-grid__mark { border-color: rgba(126, 217, 159, 0.55); background: rgba(126, 217, 159, 0.12); color: #7ED99F; }
+.week-grid__cell.is-dismissed .week-grid__mark { border-color: rgba(255, 170, 120, 0.55); background: rgba(255, 170, 120, 0.12); color: #FFAA78; }
+.week-grid__cell.is-today { outline: 1px solid rgba(255, 190, 106, 0.45); }
+
+.hint--warn { color: var(--lamp); }
+.hint--error { color: var(--danger); }
+
 .page-foot { text-align: center; padding: 22px 0 8px; }
 .page-foot p { font-size: 0.7rem; color: var(--text-faint); }
 

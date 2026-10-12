@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Xideng.Desktop</RootNamespace>
     <AssemblyName>Xideng.Desktop</AssemblyName>
+    <ApplicationIcon>assets\xideng.ico</ApplicationIcon>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
@@ -22,6 +23,16 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.0" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.0" />
     <PackageReference Include="Avalonia.Diagnostics" Version="11.3.0" Condition="'$(Configuration)' == 'Debug'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="assets\tray.png" />
+    <AvaloniaResource Include="assets\backgrounds\bg-aurora-1.png" />
+    <AvaloniaResource Include="assets\backgrounds\bg-aurora-2.png" />
+    <AvaloniaResource Include="assets\backgrounds\bg-star-1.png" />
+    <AvaloniaResource Include="assets\backgrounds\bg-star-2.png" />
+    <AvaloniaResource Include="assets\backgrounds\bg-star-3.png" />
+    <AvaloniaResource Include="assets\backgrounds\bg-firefly-1.png" />
   </ItemGroup>
 
 </Project>

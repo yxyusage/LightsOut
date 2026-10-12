@@ -27,12 +27,21 @@ public static class ScheduleEngine
 {
     /// <summary>
     /// 判定某一天按哪套时段执行。
-    /// 相比 PRD 的"工作日 / 周末"二分，这里多加了一层<b>调休上班日</b>处理：
-    /// 法定调休把某个周六变成上班日，用户当天仍在上班，晚上理应按工作日时段熄灯。
+    /// 相比 PRD 的"工作日 / 周末"二分，这里多加了两层：
+    /// <list type="bullet">
+    ///   <item><b>调休上班日</b>：法定调休把某个周六变成上班日，用户当天仍在上班，晚上理应按工作日时段熄灯；</item>
+    ///   <item><b>周日晚按工作日</b>（<see cref="PlanSettings.SundayAsWeekday"/>，默认开）：
+    ///   周日晚上开启的时段按工作日配置执行，避免"周日晚睡、周一早起"失去保护。</item>
+    /// </list>
     /// </summary>
-    public static string DayTypeOf(DateTime date, bool respectMakeupWorkdays = true)
+    public static string DayTypeOf(DateTime date, bool respectMakeupWorkdays = true, bool sundayAsWeekday = true)
     {
         if (respectMakeupWorkdays && Holidays.IsMakeupWorkday(date))
+        {
+            return Core.DayType.Weekday;
+        }
+
+        if (sundayAsWeekday && date.DayOfWeek == DayOfWeek.Sunday)
         {
             return Core.DayType.Weekday;
         }
@@ -43,14 +52,18 @@ public static class ScheduleEngine
     /// <summary>
     /// 构造"以某一天为起点"的熄灯区间。
     /// </summary>
-    public static ScheduleWindow? WindowForDate(PlanSettings? plan, DateTime date, bool respectMakeupWorkdays = true)
+    public static ScheduleWindow? WindowForDate(
+        PlanSettings? plan,
+        DateTime date,
+        bool respectMakeupWorkdays = true,
+        bool sundayAsWeekday = true)
     {
         if (plan?.Windows is null)
         {
             return null;
         }
 
-        var dayType = DayTypeOf(date, respectMakeupWorkdays);
+        var dayType = DayTypeOf(date, respectMakeupWorkdays, sundayAsWeekday);
         if (!plan.Windows.TryGetValue(dayType, out var config) || config is null)
         {
             return null;
@@ -80,7 +93,11 @@ public static class ScheduleEngine
     /// 此刻是否处于熄灯时段内；是则返回该区间。
     /// 只需检查偏移 0 与 -1 天：单次时段必然短于 24 小时。
     /// </summary>
-    public static ScheduleWindow? ActiveWindowAt(PlanSettings? plan, DateTime now, bool respectMakeupWorkdays = true)
+    public static ScheduleWindow? ActiveWindowAt(
+        PlanSettings? plan,
+        DateTime now,
+        bool respectMakeupWorkdays = true,
+        bool sundayAsWeekday = true)
     {
         if (plan is null || !plan.Enabled)
         {
@@ -89,7 +106,7 @@ public static class ScheduleEngine
 
         foreach (var offset in new[] { 0, -1 })
         {
-            var window = WindowForDate(plan, TimeUtil.AddDays(now, offset), respectMakeupWorkdays);
+            var window = WindowForDate(plan, TimeUtil.AddDays(now, offset), respectMakeupWorkdays, sundayAsWeekday);
             if (window is not null && now >= window.Start && now < window.End)
             {
                 return window;
@@ -100,7 +117,11 @@ public static class ScheduleEngine
     }
 
     /// <summary>此刻之后最早开始的熄灯区间。</summary>
-    public static ScheduleWindow? NextWindowAt(PlanSettings? plan, DateTime now, bool respectMakeupWorkdays = true)
+    public static ScheduleWindow? NextWindowAt(
+        PlanSettings? plan,
+        DateTime now,
+        bool respectMakeupWorkdays = true,
+        bool sundayAsWeekday = true)
     {
         if (plan is null || !plan.Enabled)
         {
@@ -110,7 +131,7 @@ public static class ScheduleEngine
         ScheduleWindow? earliest = null;
         foreach (var offset in new[] { 0, 1, 2 })
         {
-            var window = WindowForDate(plan, TimeUtil.AddDays(now, offset), respectMakeupWorkdays);
+            var window = WindowForDate(plan, TimeUtil.AddDays(now, offset), respectMakeupWorkdays, sundayAsWeekday);
             if (window is not null && window.Start > now && (earliest is null || window.Start < earliest.Start))
             {
                 earliest = window;
@@ -128,12 +149,14 @@ public static class ScheduleEngine
     /// <param name="warnMinutes">提前预告分钟数；null 表示取 plan 自身的值。</param>
     /// <param name="dismissedWindowKey">被紧急解除的时段开始日键。</param>
     /// <param name="respectMakeupWorkdays">是否把调休上班日按工作日处理。</param>
+    /// <param name="sundayAsWeekday">周日晚按工作日执行（<see cref="PlanSettings.SundayAsWeekday"/>）。</param>
     public static PhaseInfo PhaseAt(
         PlanSettings? plan,
         DateTime now,
         int? warnMinutes = null,
         string? dismissedWindowKey = null,
-        bool respectMakeupWorkdays = true)
+        bool respectMakeupWorkdays = true,
+        bool sundayAsWeekday = true)
     {
         var effectiveWarn = warnMinutes ?? plan?.WarnMinutes ?? 0;
 
@@ -142,7 +165,7 @@ public static class ScheduleEngine
             return new PhaseInfo(Phase.Off, null, 0, 0, false);
         }
 
-        var active = ActiveWindowAt(plan, now, respectMakeupWorkdays);
+        var active = ActiveWindowAt(plan, now, respectMakeupWorkdays, sundayAsWeekday);
         if (active is not null)
         {
             // 紧急解除只作用于"当前这一次"时段，次日计划照常生效（PRD 2.2.5）
@@ -155,7 +178,7 @@ public static class ScheduleEngine
                 dismissed);
         }
 
-        var next = NextWindowAt(plan, now, respectMakeupWorkdays);
+        var next = NextWindowAt(plan, now, respectMakeupWorkdays, sundayAsWeekday);
         if (next is null)
         {
             return new PhaseInfo(Phase.Idle, null, 0, 0, false);

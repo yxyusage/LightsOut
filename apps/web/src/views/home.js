@@ -18,6 +18,7 @@ export function createHomeView(ctx) {
     demo: requireElement("#btn-demo"),
     windowError: requireElement("#window-error"),
     windowSummary: requireElement("#window-summary"),
+    sundayAsWeekday: requireElement("#home-sunday-as-weekday"),
     whitelistSummary: requireElement("#whitelist-summary"),
     audioPresets: requireElement("#home-audio-presets"),
     audioDurations: requireElement("#home-audio-durations"),
@@ -78,6 +79,7 @@ export function createHomeView(ctx) {
   // ── 事件绑定 ──
   els.togglePlan.addEventListener("click", () => actions.setPlanEnabled(!settingsStore.value.plan.enabled));
   els.demo.addEventListener("click", () => actions.startDemo());
+  els.sundayAsWeekday.addEventListener("change", () => actions.setSundayAsWeekday(els.sundayAsWeekday.checked));
   requireElement("#btn-manage-whitelist").addEventListener("click", () => actions.openSheet("whitelist"));
   requireElement("#btn-ai-config").addEventListener("click", () => actions.openSheet("ai"));
   requireElement("#btn-sources").addEventListener("click", () => actions.openSheet("sources"));
@@ -127,6 +129,7 @@ export function createHomeView(ctx) {
 
     windowEditor.update();
     warnChips.update();
+    els.sundayAsWeekday.checked = settings.plan.sundayAsWeekday !== false;
 
     // 时段摘要
     const windows = settings.plan.windows;

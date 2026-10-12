@@ -88,63 +88,83 @@ def draw_translucent(canvas, painter):
 
 
 def render_lamp(size, inset=0.0, transparent=False):
-    """绘制"带拉绳的灯泡"。inset 为内容内缩比例（maskable 图标需要）。"""
+    """V6（定稿方向）：旧版灯泡原样，右侧加一根独立拉绳。
+
+    灯泡本体 = 旧版（顶部悬挂绳 + 圆环 + 方形连接件 + 正圆球体，竖居中细线）；
+    拉绳 = 右侧独立一根，顶端与灯泡顶部同高（都"吸在顶部"），末端小圆坠。
+    灯泡整体略左移，保持整图居中平衡。
+    """
     big = size * SUPERSAMPLE
     background = (0, 0, 0, 0) if transparent else (0, 0, 0, 255)
     canvas = Image.new("RGBA", (big, big), background)
 
-    scale = 1.0 - inset
-    center_x = big / 2.0
+    s = 1.0 - inset
+    cx = big / 2.0
+    # 灯泡整体左移，给右侧拉绳留出空间（整图仍居中）
+    bulb_cx = cx - big * 0.065 * s
 
-    # 光晕放在最底层。刻意做得克制：一旦填满灯泡内部，就会变成"实心亮球"，
-    # 违背 PRD 4.2 要求的"简约线性风格"。这里只让光晕浮在轮廓之外。
+    # 极淡光晕：只让球体有"亮着"的暗示（沿用旧版做法，克制）
     canvas = Image.alpha_composite(
         canvas,
-        radial_glow(big, (center_x, big * 0.655), big * 0.30 * scale, (255, 196, 118), max_alpha=62, power=2.7),
+        radial_glow(big, (bulb_cx, big * 0.655 * s), big * 0.30 * s, (255, 196, 118), max_alpha=62, power=2.7),
     )
     draw = ImageDraw.Draw(canvas)
 
-    stroke = max(2, int(big * 0.0155 * scale))
-    thin = max(2, int(big * 0.012 * scale))
+    stroke = max(2, int(big * 0.0155 * s))
+    thin = max(2, int(big * 0.012 * s))
 
-    # 灯绳
-    draw.line([(center_x, big * 0.05), (center_x, big * 0.355 * scale)], fill=CORD + (255,), width=thin)
-
-    # 拉环（灯绳末端的圆环）
-    ring_r = big * 0.043 * scale
-    ring_y = big * 0.393 * scale
+    # ── 灯泡本体（旧版：悬挂绳 + 圆环 + 方形座 + 正圆球）──
+    # 顶部悬挂绳：长度 = 整体结构高 × 0.382（黄金分割短段）
+    #   整体结构高 H = 球底(0.818) − 顶(0.05) = 0.768；0.382×0.768 ≈ 0.293 → 绳尾 y≈0.343
+    draw.line([(bulb_cx, big * 0.05), (bulb_cx, big * 0.343 * s)], fill=CORD + (255,), width=thin)
+    # 圆环（拉环）
+    ring_r = big * 0.043 * s
+    ring_y = big * 0.393 * s
     draw.ellipse(
-        [center_x - ring_r, ring_y - ring_r, center_x + ring_r, ring_y + ring_r],
+        [bulb_cx - ring_r, ring_y - ring_r, bulb_cx + ring_r, ring_y + ring_r],
         outline=LAMP_SOFT + (255,),
         width=thin,
     )
-
-    # 灯座
-    base_w = big * 0.128 * scale
-    base_h = big * 0.046 * scale
-    base_top = big * 0.443 * scale
+    # 方形连接件
+    base_w = big * 0.128 * s
+    base_h = big * 0.046 * s
+    base_top = big * 0.443 * s
     draw.rounded_rectangle(
-        [center_x - base_w / 2, base_top, center_x + base_w / 2, base_top + base_h],
-        radius=int(big * 0.014 * scale),
+        [bulb_cx - base_w / 2, base_top, bulb_cx + base_w / 2, base_top + base_h],
+        radius=int(big * 0.014 * s),
         outline=LAMP_SOFT + (255,),
         width=stroke,
     )
-
-    # 灯颈：把灯座与灯泡连起来，避免两者之间出现视觉断裂
-    neck_w = big * 0.052 * scale
+    # 灯颈（连接件到球体）
+    neck_w = big * 0.052 * s
     draw.rectangle(
-        [center_x - neck_w / 2, base_top + base_h - stroke, center_x + neck_w / 2, big * 0.522 * scale],
+        [bulb_cx - neck_w / 2, base_top + base_h - stroke, bulb_cx + neck_w / 2, big * 0.522 * s],
         outline=LAMP_SOFT + (255,),
         width=stroke,
     )
-
-    # 灯泡：纯轮廓，内部留空 —— 这才是"线性风格"
-    bulb_r = big * 0.150 * scale
-    bulb_y = big * 0.668 * scale
+    # 正圆球体
+    bulb_r = big * 0.150 * s
+    bulb_y = big * 0.668 * s
     draw.ellipse(
-        [center_x - bulb_r, bulb_y - bulb_r, center_x + bulb_r, bulb_y + bulb_r],
+        [bulb_cx - bulb_r, bulb_y - bulb_r, bulb_cx + bulb_r, bulb_y + bulb_r],
         outline=LAMP + (255,),
         width=stroke,
+    )
+
+    # ── 右侧独立拉绳（顶端与灯泡顶部同高，末端小圆坠）──
+    # 拉绳长度 = 整体结构高 × 0.618（黄金分割长段）≈ 0.475 → 绳尾 y≈0.525
+    # 悬挂绳 : 拉绳 = 0.382 : 0.618 = 0.618（黄金比）
+    cord_x = cx + big * 0.205 * s
+    cord_y0 = big * 0.05
+    cord_y1 = big * 0.525 * s
+    draw.line([(cord_x, cord_y0), (cord_x, cord_y1)], fill=CORD + (255,), width=thin)
+    bead_r = big * 0.024 * s
+    bead_y = cord_y1 + big * 0.022 * s
+    draw.ellipse(
+        [cord_x - bead_r, bead_y - bead_r, cord_x + bead_r, bead_y + bead_r],
+        fill=LAMP_SOFT + (255,),
+        outline=LAMP_SOFT + (255,),
+        width=thin,
     )
 
     return canvas.resize((size, size), Image.LANCZOS)

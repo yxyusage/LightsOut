@@ -26,6 +26,20 @@ public sealed class PlanSettings
     };
 
     public int WarnMinutes { get; set; } = 15;
+
+    /// <summary>
+    /// 周日晚按工作日执行（PRD 讨论结论 B）：默认开。
+    /// 多数用户周一要早起上班，周日晚上若套用"周末晚睡时段"会失去保护，
+    /// 因此把"周日开启的时段"按工作日配置执行；周六仍按周末配置。
+    /// </summary>
+    public bool SundayAsWeekday { get; set; } = true;
+}
+
+/// <summary>界面外观（桌面端设置窗口背景，Web 端同步支持）。</summary>
+public sealed class AppearanceSettings
+{
+    /// <summary>内置背景标识，缺省 "dark"（纯深色，不加载图片）。</summary>
+    public string BackgroundId { get; set; } = "dark";
 }
 
 /// <summary>黑屏界面表现（PRD 4.4）。</summary>
@@ -161,6 +175,8 @@ public sealed class Settings
 
     public PlanSettings Plan { get; set; } = new();
 
+    public AppearanceSettings Appearance { get; set; } = new();
+
     public BlackoutSettings Blackout { get; set; } = new();
 
     public WhitelistSettings Whitelist { get; set; } = new();
@@ -212,11 +228,13 @@ public sealed class Settings
         {
             Enabled = Plan.Enabled,
             WarnMinutes = Plan.WarnMinutes,
+            SundayAsWeekday = Plan.SundayAsWeekday,
             Windows = Plan.Windows.ToDictionary(
                 pair => pair.Key,
                 pair => pair.Value.Clone(),
                 StringComparer.Ordinal),
         },
+        Appearance = new AppearanceSettings { BackgroundId = Appearance.BackgroundId },
         Blackout = new BlackoutSettings { CopyIntervalSec = Blackout.CopyIntervalSec, Brightness = Blackout.Brightness },
         Whitelist = new WhitelistSettings
         {
@@ -298,6 +316,13 @@ public static class SettingsMigrator
         s.Blackout ??= new BlackoutSettings();
         s.Blackout.Brightness = ClampDouble(s.Blackout.Brightness, 0.15, 1, 0.62);
         s.Blackout.CopyIntervalSec = ClampDouble(s.Blackout.CopyIntervalSec, 5, 120, 12);
+
+        // --- appearance ---
+        s.Appearance ??= new AppearanceSettings();
+        if (string.IsNullOrWhiteSpace(s.Appearance.BackgroundId))
+        {
+            s.Appearance.BackgroundId = "dark";
+        }
 
         // --- whitelist ---
         s.Whitelist ??= new WhitelistSettings();

@@ -33,6 +33,17 @@ public partial class BlackoutWindow : Window
     private string _shownCopyId = string.Empty;
     private DispatcherTimer? _noticeTimer;
 
+    // ── 拉绳交互状态（进入熄灯时先让用户亲手拉绳）──
+    private bool _needsPull;
+    private bool _dragging;
+    private double _dragStartY;
+    private double _pullOffset;
+    private const double PullMaxOffset = 120.0;   // 拉到底的位移阈值（DIP）
+    private const int PullTimeoutSeconds = 60;    // 60 秒不拉 → 灯自动熄灭（PRD 增强）
+    private DispatcherTimer? _pullTimer;           // 60 秒超时倒计时
+    private int _pullSecondsLeft;
+    private DispatcherTimer? _snapTimer;           // 未拉到底时的回弹动画
+
     /// <summary>供 XAML 设计器 / 加载器使用的无参构造。</summary>
     public BlackoutWindow()
         : this(null)
@@ -85,8 +96,153 @@ public partial class BlackoutWindow : Window
     {
         base.OnPointerPressed(e);
 
+        // 拉绳期间不累计连点（避免误触紧急解除入口）；黑屏阶段连点 5 次才触发
+        if (_needsPull)
+        {
+            _dragging = true;
+            _dragStartY = e.GetPosition(this).Y;
+            e.Pointer.Capture(this);
+            return;
+        }
+
         // PRD 2.2.5：连续点击屏幕 5 次触发紧急解除入口
         _taps.Tap();
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+
+        if (!_dragging || !_needsPull)
+        {
+            return;
+        }
+
+        var delta = e.GetPosition(this).Y - _dragStartY;
+        _pullOffset = Math.Clamp(delta, 0, PullMaxOffset);
+        UpdatePullPosition();
+
+        // 拉到阈值即触发灭灯（有物理的"咔哒"感，无需等松手）
+        if (_pullOffset >= PullMaxOffset)
+        {
+            TriggerPull();
+        }
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+
+        if (!_dragging)
+        {
+            return;
+        }
+
+        _dragging = false;
+        e.Pointer.Capture(null);
+
+        // 没拉到底 → 松手回弹复位
+        if (_needsPull && _pullOffset > 0)
+        {
+            SnapBack();
+        }
+    }
+
+    // ── 拉绳交互（进入熄灯仪式）─────────────────────────────
+
+    /// <summary>协调器标记"本次进入熄灯需要拉绳"（每个时段仅一次）。</summary>
+    public void RequirePull()
+    {
+        _needsPull = true;
+        if (_pullTimer is null)
+        {
+            StartPullCountdown();
+        }
+    }
+
+    private void ShowPullLayer()
+    {
+        _pullOffset = 0;
+        UpdatePullPosition();
+
+        PullLayer.IsVisible = true;
+        MainContent.Opacity = 0;
+        LampLayer.Opacity = 0;
+        DimLayer.Opacity = 1;
+        WarmGlow.Opacity = 0;
+
+        StartPullCountdown();
+    }
+
+    private void UpdatePullPosition()
+    {
+        PullCordGroup.RenderTransform = new TranslateTransform(0, _pullOffset);
+    }
+
+    private void StartPullCountdown()
+    {
+        StopPullCountdown();
+        _pullSecondsLeft = PullTimeoutSeconds;
+
+        _pullTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _pullTimer.Tick += (_, _) =>
+        {
+            _pullSecondsLeft -= 1;
+            if (_pullSecondsLeft <= 0)
+            {
+                PullCountdown.Text = "灯已自动熄灭";
+                TriggerPull();
+                return;
+            }
+            PullCountdown.Text = $"灯将在 {_pullSecondsLeft} 秒后自动熄灭";
+        };
+        _pullTimer.Start();
+
+        PullCountdown.Text = $"灯将在 {_pullSecondsLeft} 秒后自动熄灭";
+    }
+
+    private void StopPullCountdown()
+    {
+        _pullTimer?.Stop();
+        _pullTimer = null;
+    }
+
+    /// <summary>未拉到底时的回弹动画：绳子弹回原位。</summary>
+    private void SnapBack()
+    {
+        _snapTimer?.Stop();
+        _snapTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _snapTimer.Tick += (_, _) =>
+        {
+            _pullOffset -= Math.Max(3, _pullOffset * 0.22);
+            if (_pullOffset <= 0.5)
+            {
+                _pullOffset = 0;
+                _snapTimer?.Stop();
+                _snapTimer = null;
+            }
+            UpdatePullPosition();
+        };
+        _snapTimer.Start();
+    }
+
+    /// <summary>拉绳成功（或超时自动熄灭）：进入熄灯渐变动画。</summary>
+    private void TriggerPull()
+    {
+        if (!_needsPull)
+        {
+            return;
+        }
+
+        _needsPull = false;
+        _dragging = false;
+        _snapTimer?.Stop();
+        _snapTimer = null;
+        StopPullCountdown();
+
+        PullLayer.IsVisible = false;
+        LampLayer.Opacity = 1;
+        StartAnimation(entrance: true);
     }
 
     // ── 屏幕与置顶 ──────────────────────────────────────────
@@ -123,12 +279,19 @@ public partial class BlackoutWindow : Window
         }
     }
 
-    /// <summary>进入熄灯：显示窗口并播放入场动画。</summary>
+    /// <summary>进入熄灯：显示窗口并播放入场动画（或先让用户拉绳）。</summary>
     public void PresentForBlackout()
     {
         if (!IsVisible)
         {
             Show();
+        }
+
+        // 首次进入该时段：先显示可交互的拉绳，用户亲手拉（或 60 秒超时）后才灭灯
+        if (_needsPull)
+        {
+            ShowPullLayer();
+            return;
         }
 
         // 协调器每 250ms 调用一次本方法，必须避免把动画反复重启导致永远播不完
@@ -221,6 +384,8 @@ public partial class BlackoutWindow : Window
         Bulb.Opacity = 0.05 + (0.95 * e);
         LampLayer.Opacity = e;
         DimLayer.Opacity = e;
+        // 暖光强度随"灯还亮着"的程度同步变化：灯灭则光线退场，灯亮则温暖光晕浮现
+        WarmGlow.Opacity = e * 0.9;
         MainContent.Opacity = (1 - e) * _brightness;
 
         if (progress < 1)
@@ -235,6 +400,7 @@ public partial class BlackoutWindow : Window
         {
             LampLayer.Opacity = 0;
             DimLayer.Opacity = 0;
+            WarmGlow.Opacity = 0;
             MainContent.Opacity = _brightness;
         }
         else
