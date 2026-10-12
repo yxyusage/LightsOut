@@ -75,12 +75,25 @@
         <stop offset="45%" stop-color="#ffbe6a" stop-opacity="0.18" />
         <stop offset="100%" stop-color="#ffbe6a" stop-opacity="0" />
       </radialGradient>
+      <!-- 灯泡内部的暖光：由内向外衰减，而不是一层平铺的淡色 -->
+      <radialGradient id="lampBulbFill" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ffd7a0" stop-opacity="0.36" />
+        <stop offset="65%" stop-color="#ffd7a0" stop-opacity="0.12" />
+        <stop offset="100%" stop-color="#ffd7a0" stop-opacity="0" />
+      </radialGradient>
     </defs>
+    <!--
+      ⚠️ 这盏灯的几何比例与桌面端 platforms/desktop/Views/BlackoutWindow.axaml 保持一致。
+      两端曾经各写各的，结果 Web 端描边只有桌面端的一半粗、灯座还是方块状，看着不像同一盏灯。
+      基准（以灯泡直径 D=68 为单位，见下方注释）：
+        灯泡描边 0.051D  ·  拉环直径 0.306D  ·  灯座 0.531D × 0.173D
+      改这里时请同步改桌面端，反之亦然。
+    -->
     <circle class="lamp__glow" cx="100" cy="228" r="120" fill="url(#lampGlow)" />
     <g class="lamp__assembly">
-      <line class="lamp__cord" x1="100" y1="-400" x2="100" y2="152" />
-      <circle class="lamp__ring" cx="100" cy="163" r="8" />
-      <rect class="lamp__base" x="86" y="182" width="28" height="20" rx="5" />
+      <line class="lamp__cord" x1="100" y1="-400" x2="100" y2="154.5" />
+      <circle class="lamp__ring" cx="100" cy="166.3" r="10.4" />
+      <rect class="lamp__base" x="81.95" y="180.8" width="36.1" height="11.8" rx="3.5" />
       <circle class="lamp__bulb" cx="100" cy="228" r="34" />
     </g>
   </svg>

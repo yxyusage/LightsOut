@@ -10,7 +10,24 @@
         MinHeight="600"
         Background="#111111"
         WindowStartupLocation="CenterScreen">
-  <Grid RowDefinitions="Auto,*,Auto" Margin="18">
+  <!--
+    外层 Grid 铺满整个窗口，只负责两件事：放背景图、放压暗层。
+    内容缩在里层（保留原来的 18px 内边距），这样背景能一直铺到窗口边缘。
+  -->
+  <Grid>
+    <!-- 背景图层：默认深色，用户选了背景图后由 ApplyBackground() 填成 ImageBrush -->
+    <Border x:Name="BackgroundLayer" Background="#111111" />
+
+    <!--
+      压暗层（scrim）。
+      背景图是照片类内容，亮部（星空、极光的白点）会直接把正文的对比度吃掉 ——
+      实测在星空背景下，占位提示文字几乎完全看不见。
+      这一层让背景依然看得见，但正文始终保持在可读的对比度上。
+      纯深色背景时由代码设为透明，不做任何压暗。
+    -->
+    <Border x:Name="BackgroundScrim" Background="Transparent" IsHitTestVisible="False" />
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="18">
     <!-- 标题 -->
     <StackPanel Grid.Row="0" Margin="0,4,0,10">
       <TextBlock Text="熄灯早睡" FontSize="22" Foreground="#EAEAEA" />
@@ -109,5 +126,6 @@
       <TextBlock x:Name="ViolationText" Foreground="#C9A27A" FontSize="12" TextWrapping="Wrap" />
       <TextBlock x:Name="FooterText" FontSize="11" Foreground="#666666" TextWrapping="Wrap" />
     </StackPanel>
+    </Grid>
   </Grid>
 </Window>

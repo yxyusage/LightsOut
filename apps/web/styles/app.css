@@ -472,11 +472,18 @@ input[type="range"]::-moz-range-thumb {
   overflow: visible;
   color: var(--lamp);
 }
+/* 几何比例与桌面端一致，详见 index.html 里那段注释 */
 .lamp__assembly { transform-origin: 100px 0; }
 .lamp__cord { stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.4; }
-.lamp__ring { stroke: var(--lamp-soft); stroke-width: 1.6; }
-.lamp__base { stroke: var(--lamp-soft); stroke-width: 1.6; fill: rgba(255, 190, 106, 0.05); }
-.lamp__bulb { stroke: var(--lamp); stroke-width: 1.8; fill: rgba(255, 215, 160, 0.1); transform-box: fill-box; transform-origin: center; }
+.lamp__ring { stroke: var(--lamp-soft); stroke-width: 2.1; }
+.lamp__base { stroke: var(--lamp-soft); stroke-width: 2.1; fill: none; }
+.lamp__bulb {
+  stroke: var(--lamp);
+  stroke-width: 3.5;
+  fill: url(#lampBulbFill);
+  transform-box: fill-box;
+  transform-origin: center;
+}
 .lamp__glow { transform-box: fill-box; transform-origin: center; }
 
 /* 入场：拉绳 → 灯亮一下 → 熄灭 → 全黑 */

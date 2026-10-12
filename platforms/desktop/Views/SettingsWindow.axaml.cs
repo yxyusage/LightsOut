@@ -195,39 +195,46 @@ public partial class SettingsWindow : Window
 
     // ── 外观 ──────────────────────────────────────────────
 
+    /// <summary>
+    /// 压暗层强度。背景图是照片类内容，亮部会把正文对比度吃光，
+    /// 单靠图片本身在星空/极光这类高光背景下正文是不可读的。
+    /// </summary>
+    private static readonly IBrush ScrimOverImage = new SolidColorBrush(Color.Parse("#D9000000")); // 85% 黑
+
+    private static readonly IBrush SolidBackdrop = new SolidColorBrush(Color.Parse("#111111"));
+
     /// <summary>根据当前选择的背景 id 即时预览窗口背景。</summary>
     private void ApplyBackground()
     {
         var index = AppearanceCombo.SelectedIndex;
-        if (index < 0 || index >= BackgroundOptions.Length)
-        {
-            Background = new SolidColorBrush(Color.Parse("#111111"));
-            return;
-        }
+        var uriText = index >= 0 && index < BackgroundOptions.Length ? BackgroundOptions[index].Uri : null;
 
-        var option = BackgroundOptions[index];
-        if (option.Uri is null)
+        if (uriText is null)
         {
-            Background = new SolidColorBrush(Color.Parse("#111111"));
+            // 纯深色：不需要压暗
+            BackgroundLayer.Background = SolidBackdrop;
+            BackgroundScrim.Background = Brushes.Transparent;
             return;
         }
 
         try
         {
-            var uri = new Uri(option.Uri);
+            var uri = new Uri(uriText);
             using var stream = AssetLoader.Open(uri);
             var bitmap = new Bitmap(stream);
-            Background = new ImageBrush(bitmap)
+            BackgroundLayer.Background = new ImageBrush(bitmap)
             {
                 Stretch = Stretch.UniformToFill,
                 AlignmentX = AlignmentX.Center,
                 AlignmentY = AlignmentY.Center,
             };
+            BackgroundScrim.Background = ScrimOverImage;
         }
         catch (Exception)
         {
             // 资源缺失时回落到深色背景，不阻塞设置窗口
-            Background = new SolidColorBrush(Color.Parse("#111111"));
+            BackgroundLayer.Background = SolidBackdrop;
+            BackgroundScrim.Background = Brushes.Transparent;
         }
     }
 
