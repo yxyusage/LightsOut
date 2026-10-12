@@ -155,17 +155,20 @@ class BlackoutActivity : AppCompatActivity() {
     /* ───────────── 窗口与沉浸式全屏 ───────────── */
 
     private fun applyWindowFlags() {
-        // PRD 2.2.2 指定的三个窗口标志
-        @Suppress("DEPRECATION")
-        window.addFlags(
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
-        )
-
+        // ⚠️ 这里刻意**不**用 FLAG_TURN_SCREEN_ON / FLAG_SHOW_WHEN_LOCKED / FLAG_KEEP_SCREEN_ON。
+        //
+        // PRD 2.2.2 原本要求这三个标志，但真机上它们的效果是"用户锁屏后屏幕又被强行点亮、
+        // 而且在锁屏之上也显示熄灯界面" —— 睡前想锁屏放下手机的人反而被屏幕一直照着，
+        // 这与"把手机交还给睡眠"的产品目标正好相反。
+        //
+        // 现在的行为（用户明确要求）：
+        //   · 息屏就让它息屏，熄灯界面在后台等着；
+        //   · 解锁后自动回到熄灯界面，仍然逃不掉。
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
+            // 从 Android 8.1 起这两个方法取代对应的窗口标志，必须显式置 false；
+            // 否则 Activity 仍可能继承 theme 里的行为。
+            setShowWhenLocked(false)
+            setTurnScreenOn(false)
         }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -557,6 +560,20 @@ class BlackoutActivity : AppCompatActivity() {
         fun isVisible(): Boolean {
             val activity = instance?.get() ?: return false
             return activity.resumed && !activity.isFinishing
+        }
+
+        /**
+         * 是否已经"摆在那里"（已创建且未销毁），不要求处于 resumed。
+         *
+         * 与 [isVisible] 的区别很关键：息屏时 Activity 只会 paused，[isVisible] 变 false，
+         * 但界面其实还在返回栈上。这时若再调用 [launch]，就会不断重启 Activity ——
+         * 真机表现就是"画面一直在来回切"，配合原来的 FLAG_TURN_SCREEN_ON 还会把屏幕反复点亮。
+         *
+         * 熄灯判定要问的是"界面在不在"，而不是"现在亮不亮"。
+         */
+        fun isPresented(): Boolean {
+            val activity = instance?.get() ?: return false
+            return !activity.isFinishing
         }
 
         fun launch(context: Context) {

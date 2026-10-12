@@ -210,6 +210,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TICK_MS = 1_000L
-        private const val DEMO_DURATION_MS = 2 * 60_000L
+        // 演示只是让人"看一眼效果"，2 分钟太长（要盯着屏幕等它结束），15 秒够看清了
+    private const val DEMO_DURATION_MS = 15_000L
     }
 }

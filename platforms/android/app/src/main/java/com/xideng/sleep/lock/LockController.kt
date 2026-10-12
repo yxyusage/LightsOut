@@ -193,7 +193,9 @@ class LockController(private val context: Context, private val graph: AppGraph) 
                 // 用户正在使用白名单应用、且额度没用完时不去打断他
                 if (graph.whitelistSession.active && !whitelistExhausted) return
 
-                if (!BlackoutActivity.isVisible()) {
+                // 用 isPresented 而不是 isVisible：息屏时 Activity 只是 paused，
+                // 界面还在返回栈上，不该再 launch 一次（否则画面来回切、屏幕被反复点亮）
+                if (!BlackoutActivity.isPresented()) {
                     BlackoutActivity.launch(context)
                 }
             }

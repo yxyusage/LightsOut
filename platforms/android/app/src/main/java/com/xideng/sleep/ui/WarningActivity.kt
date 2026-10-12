@@ -48,14 +48,15 @@ class WarningActivity : AppCompatActivity() {
         graph = XidengApp.graphOf(this)
 
         @Suppress("DEPRECATION")
+        // 与 BlackoutActivity 同样的取舍：不点亮屏幕、不在锁屏之上显示、不常亮。
+        // 预告弹窗更没必要把人从睡眠里照醒 —— 息屏时就安静地等着，解锁后再显示。
         window.addFlags(
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
+            // 显式置 false：否则仍会继承 theme 里的行为，锁屏时把屏幕点亮
+            setShowWhenLocked(false)
+            setTurnScreenOn(false)
         }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
