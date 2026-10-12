@@ -31,6 +31,9 @@ public interface IProcessWatcher : IDisposable
     /// <summary>前台应用发生变化时触发。</summary>
     event Action<ForegroundAppInfo>? ForegroundChanged;
 
+    /// <summary>读取当前前台应用信息；平台不支持或当前无前台窗口时返回 null。</summary>
+    ForegroundAppInfo? QueryForeground();
+
     void Start(int intervalMs);
 
     void Stop();
@@ -115,8 +118,11 @@ public sealed class WindowsProcessWatcher : IProcessWatcher
         }
     }
 
+    /// <summary>读取当前前台应用信息；无前台窗口时返回 null。</summary>
+    public ForegroundAppInfo? QueryForeground() => QueryForegroundImpl();
+
     /// <summary>读取当前前台窗口信息；无前台窗口时返回 null。</summary>
-    public static ForegroundAppInfo? QueryForeground()
+    public static ForegroundAppInfo? QueryForegroundImpl()
     {
         var hwnd = GetForegroundWindow();
         if (hwnd == IntPtr.Zero)
@@ -196,6 +202,8 @@ public sealed class UnsupportedProcessWatcher : IProcessWatcher
         add => _ = value;
         remove => _ = value;
     }
+
+    public ForegroundAppInfo? QueryForeground() => null;
 
     public void Start(int intervalMs)
     {

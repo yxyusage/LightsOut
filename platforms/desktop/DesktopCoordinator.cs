@@ -45,6 +45,11 @@ public sealed class DesktopCoordinator : IDisposable
     private DateTime _nextTopmostRefreshAt = DateTime.MinValue;
     private DateTime _previewUntil = DateTime.MinValue;
 
+    // ── 白名单放行状态（黑屏让出）与共用时长预算 ──
+    private bool _whitelistSuspended;
+    private DateTime _lastWhitelistStamp = DateTime.MinValue;
+    private string? _lastWhitelistWindowKey;
+
     public DesktopCoordinator()
     {
         AppPaths.EnsureUserDataDir();
@@ -52,6 +57,7 @@ public sealed class DesktopCoordinator : IDisposable
         Settings = new SettingsStore(_storage);
         Quota = new QuotaStore(_storage, "quota", Settings.Value.Emergency.QuotaTotal);
         Engine = new Engine(Settings, Quota);
+        WhitelistBudget = new WhitelistBudgetStore(_storage);
         _violations = new ViolationLog(new JsonFileKeyValueStore(AppPaths.ViolationsFile));
 
         _processWatcher = ProcessWatcherFactory.Create();
@@ -64,6 +70,8 @@ public sealed class DesktopCoordinator : IDisposable
     public SettingsStore Settings { get; }
 
     public QuotaStore Quota { get; }
+
+    public WhitelistBudgetStore WhitelistBudget { get; }
 
     public Engine Engine { get; }
 
@@ -145,8 +153,93 @@ public sealed class DesktopCoordinator : IDisposable
             HideBlackout();
         }
 
+        UpdateWhitelistForeground(now, snapshot, active || now < _previewUntil);
         UpdateWatcherState(snapshot);
         Updated?.Invoke(snapshot);
+    }
+
+    // ── 白名单放行与共用时长预算 ────────────────────────────
+
+    /// <summary>
+    /// 心跳内判断当前前台进程：白名单应用在前台时黑屏让出（应用可用）、
+    /// 真实熄灯时段内持续消耗共用时长预算；离开白名单立即恢复熄灯置顶。
+    /// </summary>
+    private void UpdateWhitelistForeground(DateTime now, EngineSnapshot snapshot, bool blackoutShowing)
+    {
+        var totalMs = Settings.Value.Whitelist.TotalMinutes * 60_000L;
+        var windowKey = snapshot.Window?.Start is DateTime start ? TimeUtil.DateKey(start) : null;
+        var whitelistForeground = false;
+
+        if (blackoutShowing && windowKey is not null)
+        {
+            var info = ProcessWatcher.QueryForeground();
+            whitelistForeground = info is not null && IsWhitelistedProcess(info.ProcessName);
+
+            if (whitelistForeground)
+            {
+                if (!_whitelistSuspended)
+                {
+                    _whitelistSuspended = true;
+                    SuspendBlackoutWindowsForWhitelist();
+                }
+
+                // 预算仅在真实熄灯时段消耗（测试预览不扣额度）
+                if (snapshot.Phase == Core.Phase.Active)
+                {
+                    if (_lastWhitelistStamp != DateTime.MinValue
+                        && string.Equals(_lastWhitelistWindowKey, windowKey, StringComparison.Ordinal))
+                    {
+                        var deltaMs = (long)(now - _lastWhitelistStamp).TotalMilliseconds;
+                        if (deltaMs > 0)
+                        {
+                            WhitelistBudget.Consume(now, windowKey, totalMs, deltaMs);
+                        }
+                    }
+
+                    _lastWhitelistStamp = now;
+                    _lastWhitelistWindowKey = windowKey;
+
+                    if (WhitelistBudget.Remaining(now, windowKey, totalMs) <= 0)
+                    {
+                        _whitelistSuspended = false;
+                        ResumeBlackoutWindows();
+                        Notice?.Invoke($"白名单共用时长已用完（本次熄灯共 {Settings.Value.Whitelist.TotalMinutes} 分钟），熄灯模式已恢复。");
+                    }
+                }
+            }
+        }
+
+        if (!whitelistForeground)
+        {
+            _lastWhitelistStamp = DateTime.MinValue;
+            if (_whitelistSuspended)
+            {
+                _whitelistSuspended = false;
+                ResumeBlackoutWindows();
+            }
+        }
+
+        var remaining = windowKey is not null ? WhitelistBudget.Remaining(now, windowKey, totalMs) : 0;
+        foreach (var window in _blackoutWindows)
+        {
+            window.UpdateWhitelistRemaining(remaining, totalMs);
+        }
+    }
+
+    private void SuspendBlackoutWindowsForWhitelist()
+    {
+        foreach (var window in _blackoutWindows)
+        {
+            window.SuspendForWhitelist();
+        }
+    }
+
+    private void ResumeBlackoutWindows()
+    {
+        foreach (var window in _blackoutWindows)
+        {
+            window.ResumeForBlackout();
+        }
     }
 
     /// <summary>临时预览熄灯窗口（设置界面的"测试熄灯窗口"按钮）。</summary>
@@ -271,7 +364,9 @@ public sealed class DesktopCoordinator : IDisposable
 
     private void UpdateWatcherState(EngineSnapshot snapshot)
     {
-        var wanted = snapshot.Phase == Core.Phase.Active
+        // 测试预览（StartBlackoutPreview）期间同样启用监听，白名单放行/拦截行为与真实熄灯一致
+        var now = DateTime.Now;
+        var wanted = (snapshot.Phase == Core.Phase.Active || now < _previewUntil)
                      && Settings.Value.Desktop.ProcessWatch
                      && _processWatcher.IsSupported;
 

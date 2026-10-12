@@ -508,6 +508,40 @@ public static class SelfTest
         h.Eq("往返保留桌面端扩展字段 ProcessName", "Code",
             restored.Whitelist.Apps.FirstOrDefault(app => app.Id == "vscode")?.ProcessName);
         h.Eq("往返保留桌面端扩展节 Desktop.AutoStart", false, restored.Desktop.AutoStart);
+
+        // ── 白名单共用时长预算（WhitelistBudgetStore）──
+        RunWhitelistBudgetGroup(h);
+    }
+
+    private static void RunWhitelistBudgetGroup(Harness h)
+    {
+        var store = new WhitelistBudgetStore(new MemoryKeyValueStore());
+        var day1 = "2026-10-12";
+        var day2 = "2026-10-13";
+        const long total = 30L * 60_000;
+
+        h.Eq("初始剩余为满额", total, store.Remaining(new DateTime(2026, 10, 12, 23, 10, 0), day1, total));
+        store.Consume(new DateTime(2026, 10, 12, 23, 10, 0), day1, total, 60_000);
+        h.Eq("消耗 1 分钟后剩余 29 分钟", 29L * 60_000,
+            store.Remaining(new DateTime(2026, 10, 12, 23, 11, 0), day1, total));
+
+        store.Consume(new DateTime(2026, 10, 12, 23, 11, 0), day1, total, 30L * 60_000);
+        h.Eq("超出预算后剩余夹到 0", 0L, store.Remaining(new DateTime(2026, 10, 12, 23, 41, 0), day1, total));
+
+        // 进入新一天的熄灯窗口 → 预算重置回满额
+        h.Eq("新熄灯窗口自动重置预算", total,
+            store.Remaining(new DateTime(2026, 10, 13, 23, 5, 0), day2, total));
+
+        var persisted = new WhitelistBudgetStore(new MemoryKeyValueStore(
+            [new KeyValuePair<string, string>("whitelist-budget",
+                "{\"windowKey\":\"2026-10-12\",\"usedMs\":120000}")]));
+        h.Eq("重启后剩余额度持久化有效", 28L * 60_000,
+            persisted.Remaining(new DateTime(2026, 10, 12, 23, 30, 0), day1, total));
+
+        var broken = new WhitelistBudgetStore(new MemoryKeyValueStore(
+            [new KeyValuePair<string, string>("whitelist-budget", "!!!损坏!!!")]));
+        h.Eq("损坏的预算数据不阻塞启动（回满额）", total,
+            broken.Remaining(new DateTime(2026, 10, 12, 23, 30, 0), day1, total));
     }
 
     // ─────────────────────────────────────────────────────────
@@ -682,7 +716,7 @@ public static class SelfTest
 
         if (OperatingSystem.IsWindows())
         {
-            var foreground = WindowsProcessWatcher.QueryForeground();
+            var foreground = WindowsProcessWatcher.QueryForegroundImpl();
             h.Check("能读取当前前台窗口（无窗口时允许为 null）",
                 foreground is null || (foreground.ProcessId > 0 && !string.IsNullOrWhiteSpace(foreground.ProcessName)),
                 foreground is null ? "当前无前台窗口" : $"{foreground.ProcessName} (pid {foreground.ProcessId})");

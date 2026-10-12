@@ -414,6 +414,39 @@ public partial class BlackoutWindow : Window
 
     // ── 白名单 ──────────────────────────────────────────────
 
+    /// <summary>白名单应用在前台时让出屏幕：隐藏黑屏窗口，应用可正常使用（PRD 2.2.3）。</summary>
+    public void SuspendForWhitelist()
+    {
+        if (IsVisible)
+        {
+            Hide();
+        }
+    }
+
+    /// <summary>用户离开白名单应用：立即恢复熄灯置顶。</summary>
+    public void ResumeForBlackout()
+    {
+        if (!IsVisible)
+        {
+            Show();
+            ReassertTopmost();
+        }
+    }
+
+    /// <summary>同步白名单共用时长剩余（协调器心跳调用）。</summary>
+    public void UpdateWhitelistRemaining(long remainingMs, long totalMs)
+    {
+        _whitelistRemainingMs = remainingMs;
+        _whitelistTotalMs = totalMs;
+        if (WhitelistPanel.IsVisible)
+        {
+            RefreshWhitelistPanel();
+        }
+    }
+
+    private long _whitelistRemainingMs;
+    private long _whitelistTotalMs;
+
     private void ToggleWhitelistPanel()
     {
         WhitelistPanel.IsVisible = !WhitelistPanel.IsVisible;
@@ -434,8 +467,14 @@ public partial class BlackoutWindow : Window
         WhitelistSummary.Text =
             $"所有白名单应用共用总时长 {settings.Whitelist.TotalMinutes} 分钟（上限 60 分钟）；" +
             $"用户应用最多 {Limits.WhitelistAppCountMax} 个，" +
-            "系统电话 / 短信不受限且不占用时长。桌面端通过「全屏置顶 + 前台进程监听」实现等效约束：" +
-            "检测到非白名单应用抢到前台焦点时，熄灯窗口会立即重新接管。";
+            "系统电话 / 短信不受限且不占用时长。白名单应用在前台时熄灯界面会暂时让出，切回其他应用立即恢复。";
+
+        if (_whitelistTotalMs > 0)
+        {
+            var remainingMinutes = Math.Ceiling(_whitelistRemainingMs / 60_000d);
+            var totalMinutes = Math.Ceiling(_whitelistTotalMs / 60_000d);
+            WhitelistSummary.Text += $" 本次熄灯剩余 {remainingMinutes:0} / {totalMinutes:0} 分钟。";
+        }
 
         WhitelistList.Children.Clear();
         foreach (var app in settings.Whitelist.Apps)
