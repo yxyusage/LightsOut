@@ -2,7 +2,7 @@
 
 > 到点熄灯，把手机交还给睡眠。
 
-![tests](https://img.shields.io/badge/tests-111%20passing-brightgreen.svg)
+![tests](https://img.shields.io/badge/tests-127%20passing-brightgreen.svg)
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![runtime](https://img.shields.io/badge/runtime-Node%20%E2%89%A518-informational.svg)
 ![dependencies](https://img.shields.io/badge/dependencies-0-success.svg)
@@ -18,11 +18,15 @@
 | | |
 | --- | --- |
 | **在线使用**（无需安装） | <https://yxyusage.github.io/LightsOut/> |
+| **Windows 桌面版**（日常使用推荐） | <https://github.com/yxyusage/LightsOut/releases>（`Xideng.Desktop.exe` 单文件，需 .NET 10 Desktop Runtime） |
 | **下载 Android APK** | <https://github.com/yxyusage/LightsOut/releases/download/android-latest/app-debug.apk> |
 | 全部发布版本 | <https://github.com/yxyusage/LightsOut/releases> |
 
 > **在线版**：打开后点主页的「立即体验熄灯模式」，不必等到晚上 23:00。
 > 手机浏览器「添加到主屏幕」后可全屏独立运行，断网也能打开。
+>
+> **Windows 桌面版**：真正的全屏置顶接管 + 前台进程监听 + 白名单窗口层级放行
+> （熄灯时只有白名单应用可见，桌面与其他应用始终被黑屏遮住），适合电脑前日常使用。
 >
 > **Android 版**：debug 签名，侧载安装（不能上架商店），能做到 Web 版做不到的系统级接管。
 
@@ -100,7 +104,7 @@
 | 端 | 目录 | 技术栈 | 能否真正阻止你打开微信/抖音 | 验证状态 |
 | --- | --- | --- | --- | --- |
 | **Web / PWA** | `apps/web` | 原生 ES Module | ❌ 不能 | ✅ 已端到端验证（单测 / 静态检查 / 无头浏览器渲染 / 交互链路 / 离线预缓存） |
-| **桌面端** | `platforms/desktop` | Avalonia 11 + .NET 10 | ⚠️ 部分可以（**真全屏置顶** + 前台进程监听） | 见 [该目录 README](platforms/desktop/README.md) |
+| **桌面端（Windows）** | `platforms/desktop` | Avalonia 11 + .NET 10 | ✅ 可以（真全屏置顶 + 前台进程监听 + 白名单窗口层级放行） | ✅ Windows 已实现，266 项自测通过；macOS 待实现 |
 | **Android** | `platforms/android` | Kotlin + AndroidX | ✅ 可以（设备管理员 + 无障碍服务 + 前台服务 + 防卸载） | ✅ **GitHub Actions 已成功构建 Debug APK**，可直接下载安装 |
 
 > 开发用的那台机器上没有 Android SDK、且 Maven Central 不可达，所以编译这件事**交给了 CI**
@@ -218,6 +222,17 @@ node scripts/serve.mjs dist
 部署细节见 [docs/DEPLOY.md](docs/DEPLOY.md)；
 把仓库发布到 GitHub、开启 Pages、拿到公网 URL，见 [docs/PUBLISH-GITHUB.md](docs/PUBLISH-GITHUB.md)。
 
+### 安装 Windows 桌面版（推荐日常使用）
+
+单文件 `Xideng.Desktop.exe` 从 [Releases 页面](https://github.com/yxyusage/LightsOut/releases) 下载后直接运行：
+
+- 需要 **.NET 10 Desktop Runtime**（首次运行提示缺运行时时，到微软官网安装即可）
+- 功能：到点全屏黑屏接管（每屏一个窗口）、拉绳仪式（60 秒不拉自动熄灭）、
+  助眠白噪音（雨 / 海浪 / 溪流）、白名单智能添加（从运行中的应用点选或浏览 .exe，上限 3 个）
+  与共用时长预算（按熄灯窗口重置，耗尽强制拉回）、紧急解除（每周 2 次）、改时间检测
+- 设置界面为选项卡布局，时间用「时 / 分滚轮 + 键盘直输」，适配 14 寸笔记本
+- 验证：内置自检（`Xideng.Desktop.exe --selftest`，266 项断言）
+
 ### 安装 Android 端（可选）
 
 Android 端是唯一能做到**系统级接管**的形态（设备管理员防卸载、无障碍服务拦截前台应用）。
@@ -328,8 +343,8 @@ python scripts/make-assets.py
 npm test
 ```
 
-**108 个测试，全部通过**，使用 Node 内置测试运行器，零第三方依赖。测试重点放在
-"容易写错且后果严重"的地方：
+**127 个核心测试，全部通过**（使用 Node 内置测试运行器，零第三方依赖；桌面端另有 266 项自测）。
+测试重点放在"容易写错且后果严重"的地方：
 
 - **跨天熄灯时段的区间计算** —— 凌晨 02:00 必须归属到前一天开启的那次熄灯
 - **自然周额度在周一 00:00 重置** —— 而不是简单按 7 天滚动
@@ -343,8 +358,8 @@ npm test
 ## 验证记录
 
 「哪些验证过、哪些没验证过」的完整记录见 [docs/VERIFICATION.md](docs/VERIFICATION.md)，
-包括 108 项单测、静态检查、无头 Chrome 渲染与交互链路测试、离线预缓存验证，
-以及一份诚实的**未验证清单**。
+包括 127 项核心单测、静态检查、无头 Chrome 渲染与交互链路测试、离线预缓存验证、
+桌面端 266 项自测，以及一份诚实的**未验证清单**。
 
 ## 设计决策
 
