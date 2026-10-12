@@ -36,3 +36,9 @@ Thumbs.db
 # ---- 产物校验 ----
 checks.json
 preview-*/
+
+# ---- 桌面发布产物（体积大，不入库；由 CI/本地构建重新生成）----
+platforms/desktop/publish/
+release/
+*.exe
+*.dll
