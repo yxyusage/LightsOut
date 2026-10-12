@@ -554,8 +554,8 @@ class BlackoutActivity : AppCompatActivity() {
     private fun renderPullHint(millisUntilFinished: Long) {
         // 向上取整，避免一开始就显示"0 秒"
         val seconds = (millisUntilFinished + 999L) / 1000L
-        binding.lampPullHint.text = "拉一下灯绳
-灯将在 " + seconds + " 秒后自动熄灭"
+        // \n 必须是转义序列：这是 Kotlin 源码里的换行，不是文件里的真实换行
+        binding.lampPullHint.text = "拉一下灯绳\n灯将在 " + seconds + " 秒后自动熄灭"
     }
 
     private fun applyPull(delta: Float) {
