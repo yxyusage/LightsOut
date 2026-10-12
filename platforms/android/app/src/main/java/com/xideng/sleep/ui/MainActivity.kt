@@ -59,9 +59,14 @@ class MainActivity : AppCompatActivity() {
         binding.btnPreviewWarning.setOnClickListener {
             WarningActivity.launchPreview(this)
         }
+        // 文案从常量派生。
+        // 早先按钮和 toast 都写死了"2 分钟"，常量改成 15 秒后文案没跟着动 ——
+        // 用户看到的仍是"2 分钟"，于是合理地认为修复没生效。这类脱节必须从源头避免。
+        val demoSeconds = DEMO_DURATION_MS / 1000
+        binding.btnDemoBlackout.text = "演示熄灯界面（" + demoSeconds + " 秒后自动结束）"
         binding.btnDemoBlackout.setOnClickListener {
             graph.controller.startDemo(DEMO_DURATION_MS)
-            toast("演示模式已开启，2 分钟后自动结束")
+            toast("演示模式已开启，" + demoSeconds + " 秒后自动结束")
         }
         binding.btnEmergency.setOnClickListener {
             startActivity(Intent(this, EmergencyActivity::class.java))
