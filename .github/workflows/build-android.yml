@@ -158,6 +158,23 @@ jobs:
           [ -n "$CERTS" ] || CERTS="（读取签名失败）"
           echo "签名: $CERTS"
 
+          # 从 APK 里读出版本号，用于给附件起一个**带版本的名字**。
+          #
+          # 为什么必须这么做：下载地址一直是固定不变的 app-debug.apk，
+          # 浏览器/CDN 会缓存它，用户根本分不清手里是哪个文件 ——
+          # 已经出现过"下载到旧包、页脚还是 1.0.0"的情况。
+          # 带版本的文件名让"拿错文件"变成一眼可见，也顺带绕开了 CDN 缓存。
+          AAPT=$(find "$ANDROID_SDK_ROOT/build-tools" -name aapt2 2>/dev/null | sort -V | tail -1)
+          BADGING=$("$AAPT" dump badging "$APK" 2>/dev/null | head -1)
+          VNAME=$(echo "$BADGING" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")
+          VCODE=$(echo "$BADGING" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")
+          [ -n "$VNAME" ] || VNAME="unknown"
+          [ -n "$VCODE" ] || VCODE="0"
+          NAMED="xideng-$VNAME-$VCODE-debug.apk"
+          cp "$APK" "/tmp/$NAMED"
+          echo "带版本的文件名: $NAMED"
+
+          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
           SIZE=$(du -h "$APK" | cut -f1)
           COMMIT=$(git rev-parse --short HEAD)
           # ⚠️ 这段多行文本的每一行都必须缩进到 run: | 块标量内部。
@@ -166,8 +183,14 @@ jobs:
           NOTES="由 GitHub Actions 在 main 分支构建成功后自动更新。
 
           - 提交：$COMMIT
+          - 版本：$VNAME ($VCODE)
           - 体积：$SIZE
+          - **文件：$NAMED**
+          - **sha256：$SHA**
           - 签名：$CERTS
+
+          装好后请在应用主界面底部核对版本号，应当与上面一致。
+          如果页脚显示的不是这个版本，说明装的仍是旧包 —— 请先卸载再安装。
 
           debug 签名，仅供侧载试用，不能上架应用商店。
           **签名指纹固定不变**，因此装过本版之后可以直接覆盖升级，不必先卸载。"
@@ -180,8 +203,10 @@ jobs:
           # 必须是正式发布（不能是 prerelease）：GitHub 的 /releases/latest 与仓库侧栏
           # 都不显示 prerelease，用户会以为"根本没建 Release"。
           gh release edit android-latest --notes-file /tmp/notes.md --prerelease=false --latest
+          # 两个附件：带版本名的（推荐，能确认拿到的是哪一版）+ 固定名（README 里的长链接）
+          gh release upload android-latest "/tmp/$NAMED#$NAMED" --clobber
           gh release upload android-latest "$APK#app-debug.apk" --clobber
-          echo "已发布到 Release: android-latest"
+          echo "已发布到 Release: android-latest（$NAMED）"
 
       # 关键：把构建日志推到一个独立分支。
       # GitHub 的日志下载接口对匿名访问返回 403，推到分支后即可匿名读取，
