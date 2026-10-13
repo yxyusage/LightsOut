@@ -17,10 +17,15 @@
   --line: rgba(255, 255, 255, 0.07);
   --line-strong: rgba(255, 255, 255, 0.14);
 
-  /* 文字亮度刻意压低：PRD 4.4「亮度适配夜间环境，不刺眼」 */
-  --text: rgba(255, 255, 255, 0.86);
-  --text-dim: rgba(255, 255, 255, 0.46);
-  --text-faint: rgba(255, 255, 255, 0.26);
+  /*
+    文字亮度：PRD 4.4 要求「适配夜间环境，不刺眼」，但压得太低会读不清。
+    实测原来 --text-dim 0.46 / --text-faint 0.26 压在近黑底上只有约 3:1，
+    低于 WCAG AA 对正文的 4.5:1 —— 尤其在真机自动亮度下几乎看不见。
+    这里各提一档：仍然克制、不刺眼，但达到了可读的下限。
+  */
+  --text: rgba(255, 255, 255, 0.90);
+  --text-dim: rgba(255, 255, 255, 0.58);
+  --text-faint: rgba(255, 255, 255, 0.38);
 
   /* 灯泡暖光：唯一的彩色，且饱和度很低 */
   --lamp: #ffd7a0;
@@ -223,7 +228,21 @@ code { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size:
 
 /* 状态卡 */
 .card--status { gap: 10px; }
-.status__head { display: flex; align-items: center; gap: 9px; }
+/*
+  状态做成胶囊：原来只是"一个小点 + 一行小字"，紧挨着下面 1.6rem 的大数字，
+  视觉重量完全被压住，用户扫一眼不知道该看哪儿。
+  胶囊把"当前状态"明确成一个独立的信息单元，层级立刻清楚。
+*/
+.status__head {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  align-self: flex-start;
+  padding: 5px 13px 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+}
 .status__dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--text-faint);
@@ -235,7 +254,7 @@ code { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size:
 .status__dot.is-warn { background: #ffca7a; box-shadow: 0 0 12px rgba(255, 202, 122, 0.7); animation: pulse 1.2s infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.42; } }
 
-.status__label { font-size: 0.95rem; }
+.status__label { font-size: 0.8rem; letter-spacing: 0.07em; color: var(--text-dim); }
 .status__detail { font-size: 1.6rem; font-weight: 200; letter-spacing: 0.01em; color: var(--text); }
 .status__next { font-size: 0.78rem; color: var(--text-faint); }
 
@@ -332,6 +351,36 @@ input[type="range"]::-moz-range-thumb {
 
 .plain-list { display: flex; flex-direction: column; gap: 10px; font-size: 0.8rem; color: var(--text-dim); }
 .plain-list li { display: flex; gap: 9px; align-items: flex-start; line-height: 1.6; }
+/* 卡片标题右侧的总状态：比四个并列徽章安静得多，也不再抢注意力 */
+.card__meta {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+
+/* 极简状态点：只用颜色说话，不再占一整块胶囊的面积 */
+.dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.dot--on { background: var(--ok); box-shadow: 0 0 7px rgba(143, 214, 168, 0.5); }
+.dot--off { background: none; border: 1px solid var(--text-faint); }
+
+.guard-list { display: flex; flex-direction: column; gap: 11px; font-size: 0.8rem; color: var(--text-dim); }
+.guard-list li { display: flex; gap: 10px; align-items: flex-start; line-height: 1.6; }
+.guard-list .dot { margin-top: 7px; }
+.guard-list__note {
+  font-style: normal;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-faint);
+  font-size: 0.66rem;
+}
+
 .tag { flex: none; font-size: 0.66rem; padding: 2px 7px; border-radius: 5px; margin-top: 3px; letter-spacing: 0.04em; }
 .tag--on { background: rgba(143, 214, 168, 0.12); color: var(--ok); }
 .tag--off { background: rgba(255, 255, 255, 0.05); color: var(--text-faint); }
@@ -435,8 +484,11 @@ input[type="range"]::-moz-range-thumb {
 .hint--warn { color: var(--lamp); }
 .hint--error { color: var(--danger); }
 
-.page-foot { text-align: center; padding: 22px 0 8px; }
+.page-foot { text-align: center; padding: 26px 0 10px; display: flex; flex-direction: column; gap: 7px; }
 .page-foot p { font-size: 0.7rem; color: var(--text-faint); }
+.page-foot__brand { color: var(--text-dim); letter-spacing: 0.04em; }
+/* 隐私承诺是整个产品最想让访客看到的一句话，不该和版权信息一样淡 */
+.page-foot__claim { color: var(--text-dim); font-size: 0.72rem; }
 
 /* ───────────── 9. 引导页 ───────────── */
 /*

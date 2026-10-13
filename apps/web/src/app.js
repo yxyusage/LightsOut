@@ -11,6 +11,15 @@
 import * as core from "./core.js";
 import { setHidden, toast } from "./lib/dom.js";
 import { createLamp } from "./lib/lamp.js";
+
+/**
+ * 应用版本号。
+ *
+ * ⚠️ 必须与 package.json 的 version 一致 —— scripts/check.mjs 会校验，
+ * 不一致直接让检查失败。Android 端已经因为"版本号写死"吃过一次亏：
+ * 用户装了新版却看到旧版本号，于是合理地认为修复没生效。
+ */
+const APP_VERSION = "1.1.1";
 import { createBlackoutView, createWarningView } from "./views/blackout.js";
 import { createHomeView } from "./views/home.js";
 import { createOnboardingView } from "./views/onboarding.js";
@@ -685,6 +694,11 @@ async function registerServiceWorker() {
 }
 
 function boot() {
+  // 版本号只有一处定义（见文件顶部的 APP_VERSION），注入到所有页脚。
+  document.querySelectorAll("[data-app-version]").forEach((node) => {
+    node.textContent = "v" + APP_VERSION;
+  });
+
   applyScreen();
   if (ui.screen === "onboarding") onboardingView.show();
   // 立即执行一次，避免"打开页面后要等 250ms 才进入熄灯界面"造成的时间漏洞

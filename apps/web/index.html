@@ -272,18 +272,29 @@
 
     <!-- 诚实的能力说明 -->
     <section class="card card--note">
-      <h2><svg class="card__icon"><use href="#i-shield" /></svg>防护能力说明</h2>
-      <ul class="plain-list">
-        <li><span class="tag tag--on">已实现</span>系统时间篡改检测：改时间会被立即拉回熄灯界面</li>
-        <li><span class="tag tag--on">已实现</span>后台切换拦截：切走再回来立刻重新接管</li>
-        <li><span class="tag tag--on">已实现</span>刷新与返回键拦截：熄灯状态不会因为刷新而消失</li>
-        <li><span class="tag tag--on">已实现</span>离线可用：断网也能进入熄灯界面</li>
-        <li><span class="tag tag--off">需原生版</span>阻止打开其它 App、防卸载、防强制停止</li>
+      <!--
+        四个"已实现"徽章并排是纯噪音：等宽的绿色胶囊互相抢注意力，
+        反而稀释了每一条本身的份量。改成"标题右侧一个总状态 + 每条一个细节点"，
+        例外情况（需原生版）才单独标注。
+      -->
+      <h2>
+        <svg class="card__icon"><use href="#i-shield" /></svg>防护能力说明
+        <span class="card__meta"><span class="dot dot--on"></span>已实现 4 项 · 需原生版 1 项</span>
+      </h2>
+      <ul class="guard-list">
+        <li><span class="dot dot--on"></span><span>系统时间篡改检测：改时间会被立即拉回熄灯界面</span></li>
+        <li><span class="dot dot--on"></span><span>后台切换拦截：切走再回来立刻重新接管</span></li>
+        <li><span class="dot dot--on"></span><span>刷新与返回键拦截：熄灯状态不会因为刷新而消失</span></li>
+        <li><span class="dot dot--on"></span><span>离线可用：断网也能进入熄灯界面</span></li>
+        <li><span class="dot dot--off"></span><span>阻止打开其它 App、防卸载、防强制停止<em class="guard-list__note">需原生版</em></span></li>
       </ul>
     </section>
 
     <footer class="page-foot">
-      <p>熄灯早睡 v1.0.0 · MIT License · 所有数据仅保存在本机</p>
+      <!-- 版本号由 app.js 注入，与 package.json 保持一处定义；
+           写死在 HTML 里必然会过期（Android 端已经踩过一次）。 -->
+      <p><span class="page-foot__brand">熄灯早睡 <span data-app-version>v—</span></span> · MIT License</p>
+      <p class="page-foot__claim">所有数据仅保存在本机，不上传任何服务器</p>
     </footer>
   </main>
 </section>
@@ -341,7 +352,10 @@
       <button type="button" class="btn btn--danger btn--block" id="btn-reset-all">清除全部本地数据</button>
     </section>
 
-    <footer class="page-foot"><p>熄灯早睡 v1.0.0</p></footer>
+    <footer class="page-foot">
+      <p><span class="page-foot__brand">熄灯早睡 <span data-app-version>v—</span></span></p>
+      <p class="page-foot__claim">所有数据仅保存在本机，不上传任何服务器</p>
+    </footer>
   </main>
 </section>
 

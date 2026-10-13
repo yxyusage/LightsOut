@@ -147,10 +147,14 @@ export function createProfileView(ctx) {
     );
     const keptDays = days.filter((day) => day.entered && !day.dismissed).length;
     const totalDismiss = days.reduce((sum, day) => sum + day.dismissCount, 0);
+    // 空状态：新用户看到"本周 0 天按时熄灯 · 解除 0 次"是很挫败的，
+    // 而且读起来像"统计失败"。换成一句有方向感的引导。
     setText(
       els.weekReviewSummary,
-      `本周 ${keptDays} 天按时熄灯 · 解除 ${totalDismiss} 次` +
-        (totalDismiss === 0 && keptDays > 0 ? " · 完美的一周，继续保持" : ""),
+      keptDays === 0 && totalDismiss === 0
+        ? "本周还没有记录。今晚按时熄灯，这里就会亮起第一天。"
+        : `本周 ${keptDays} 天按时熄灯 · 解除 ${totalDismiss} 次` +
+            (totalDismiss === 0 && keptDays > 0 ? " · 完美的一周，继续保持" : ""),
     );
 
     setHidden(els.savePassword, false);
