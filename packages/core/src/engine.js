@@ -8,6 +8,7 @@
  *  - 测试里用伪造时钟任意"穿越时间"驱动它。
  */
 
+import { EXCEPTION_MAX_MINUTES } from "./ai.js";
 import { COPY_ROTATE_MS, PASSWORD_RESET_COOLDOWN_MS, PHASE } from "./constants.js";
 import { buildPlaylist, createRotator, hashString } from "./copy.js";
 import { verifyPassword } from "./password.js";
@@ -32,6 +33,14 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
   let rotator = null;
   /** AI 生成的文案，优先级高于本地轮播 */
   let aiText = null;
+
+  /**
+   * AI 裁定通过的「今晚例外」。
+   *
+   * 只放宽**当前时段的结束时间**，不取消熄灯、不改用户设定的时段。
+   * 换到新时段自动失效（靠 windowKey 比对），因此不会累积成"永久放宽"。
+   */
+  let tonightException = null;
 
   // ── 忘记密码兜底（PRD 增强）：等待 24 小时后重置密码 ──
 
@@ -105,6 +114,28 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
       dismissedWindowKey,
       sundayAsWeekday: settings.plan.sundayAsWeekday,
     });
+    // ── 应用「今晚例外」：只把结束时间往后推，不改相位 ──
+    // 相位是 phaseAt 按原时段算好的；既然只是延长结束时间，
+    // 当前处于 ACTIVE 的判定不会改变，因此不必重算，只需修正结束时间与剩余时长。
+    let effectiveWindow = phaseInfo.window;
+    let effectiveRemainingMs = phaseInfo.remainingMs;
+    if (
+      tonightException &&
+      effectiveWindow &&
+      tonightException.windowKey === effectiveWindow.startKey &&
+      tonightException.extraMs > 0
+    ) {
+      effectiveWindow = Object.freeze({
+        ...effectiveWindow,
+        end: new Date(effectiveWindow.end.getTime() + tonightException.extraMs),
+        extendedByMs: tonightException.extraMs,
+      });
+      effectiveRemainingMs += tonightException.extraMs;
+    } else if (tonightException && effectiveWindow && tonightException.windowKey !== effectiveWindow.startKey) {
+      // 已经跨到下个时段，旧例外自动失效
+      tonightException = null;
+    }
+
     const scene = detectScene(at);
     ensurePlaylist(scene);
 
@@ -119,8 +150,10 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
       quota: quotaStore.snapshot(at),
       passwordReset: passwordResetInfo(at),
       phase: phaseInfo.phase,
-      window: phaseInfo.window,
-      remainingMs: phaseInfo.remainingMs,
+      window: effectiveWindow,
+      remainingMs: effectiveRemainingMs,
+      /** 今晚的 AI 例外（无则为 null），界面用它展示"AI 已放宽 45 分钟" */
+      exception: tonightException,
       warnMs: phaseInfo.warnMs,
       dismissed: phaseInfo.dismissed,
       /** 是否为"用户主动解除后当日失效"状态 */
@@ -207,9 +240,49 @@ export function createEngine({ settingsStore, quotaStore, now = () => new Date()
       return { ok: true, remaining: consumed.remaining };
     },
 
+    /**
+     * 放宽今晚的熄灯结束时间。**消耗一次紧急解除额度** —— 这是刻意的：
+     * 例外必须是有代价的，否则"跟 AI 说一声就能不锁"会直接摧毁产品的强制力。
+     *
+     * @param {{minutes: number, reason?: string, understood?: string}} decision AI 的裁定结果
+     */
+    grantException({ minutes, reason, understood } = {}) {
+      const at = now();
+      const settings = settingsStore.value;
+      const phaseInfo = phaseAt(settings.plan, at, {
+        warnMinutes: settings.plan.warnMinutes,
+        dismissedWindowKey,
+        sundayAsWeekday: settings.plan.sundayAsWeekday,
+      });
+      if (phaseInfo.phase !== PHASE.ACTIVE || !phaseInfo.window) {
+        return { ok: false, reason: "not-active" };
+      }
+
+      const safeMinutes = Math.max(0, Math.min(EXCEPTION_MAX_MINUTES, Math.round(Number(minutes) || 0)));
+      if (safeMinutes === 0) return { ok: false, reason: "no-extension" };
+
+      // 先扣额度再记录：额度不足时不能留下一次"已经放宽"的状态
+      const consumed = quotaStore.consume(at);
+      if (!consumed.ok) return { ok: false, reason: "quota-exhausted" };
+
+      tonightException = {
+        windowKey: phaseInfo.window.startKey,
+        extraMs: safeMinutes * 60_000,
+        reason: String(reason ?? "").slice(0, 80),
+        understood: String(understood ?? "").slice(0, 60),
+      };
+      return { ok: true, minutes: safeMinutes, remaining: consumed.remaining };
+    },
+
+    /** 当前生效的例外（供界面展示），已过期则返回 null */
+    get exception() {
+      return tonightException;
+    },
+
     /** 重新武装（跨时段或用户手动恢复计划时调用） */
     rearm() {
       dismissedWindowKey = null;
+      tonightException = null;
     },
 
     /** 忘记密码：申请 24 小时后重置密码（不影响每周额度） */

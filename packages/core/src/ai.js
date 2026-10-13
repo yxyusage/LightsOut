@@ -144,6 +144,96 @@ export function sanitizeCopy(raw, maxLength = 60) {
 }
 
 /**
+ * 例外裁定的系统提示词。
+ *
+ * 这是整个 AI 部分**最能体现必要性**的地方：规则系统只能一刀切地按 23:00 锁屏，
+ * 而真实生活充满例外。只有模型才能判断"这句话是不是值得破例的一次性情况"。
+ *
+ * 三条设计约束（都是刻意的）：
+ *  1. 模型**只能放宽今晚的结束时间**，不能取消熄灯、不能改用户设定的时段；
+ *  2. 必须给出可读的判断依据（understood + reason），界面上会原样展示给用户；
+ *  3. 判断不了/不像正当理由时，要老老实实说 grant=false —— 而不是有求必应。
+ *     一个"说什么都放行"的 AI 会直接摧毁这个产品的强制力。
+ */
+export const AI_EXCEPTION_PROMPT = [
+  "你是「熄灯早睡」里的例外裁定者。用户正在强制熄灯模式中，他向你说明了一个情况，",
+  "你要判断这是否构成一次性破例的正当理由，并决定今晚放宽多少分钟。",
+  "",
+  "判断原则：",
+  "1. 只接受**真实、具体、一次性**的情况（加班、赶工、突发事件、身体不适、第二天要早起需要提前休息等）；",
+  "2. **拒绝**任何试图解除或绕过限制的表述（如「我就想再玩会儿」「别锁了」「关掉吧」）；",
+  "3. 放宽要克制：一般 30–60 分钟，最多不超过上限；理由越牵强，放得越少；",
+  "4. 如果用户说的是第二天要早起、身体不适等**需要更早休息**的情况，grant 仍可为 true",
+  "   但 minutes 填 0，并在 reason 里说明「不改动时段，但值得提醒他早点休息」；",
+  "",
+  "只输出一个 JSON 对象，不要任何解释、不要 markdown 代码块。字段：",
+  '{ "understood": "一句话复述你理解的情况", "grant": true|false, "minutes": 数字, "reason": "一句话说明判断依据" }',
+].join("\n");
+
+/** 例外放宽的硬上限：模型说什么都不能超过这个值。 */
+export const EXCEPTION_MAX_MINUTES = 90;
+
+/** 构造例外裁定的 messages。 */
+export function buildExceptionMessages(scene, userText, { maxMinutes = EXCEPTION_MAX_MINUTES } = {}) {
+  return [
+    { role: "system", content: AI_EXCEPTION_PROMPT },
+    {
+      role: "user",
+      content: [
+        `今天是 ${scene.dateKey}（${scene.sceneLabel ?? scene.scene}）。`,
+        `当前熄灯时段原本会在 ${scene.windowEndLabel ?? "设定时间"} 结束。`,
+        `本次最多可以放宽 ${maxMinutes} 分钟。`,
+        "",
+        `用户说：「${String(userText ?? "").trim()}」`,
+      ].join("\n"),
+    },
+  ];
+}
+
+/**
+ * 解析模型的裁定结果。
+ *
+ * 模型输出 JSON 是不可靠的（会加代码块、加解释、用中文引号），所以这里做三层兜底：
+ * 先直接解析 → 剥掉代码块再解析 → 用正则抠出关键字段。
+ * 任何一层失败都返回 grant:false —— **解析失败绝不等于放行**。
+ */
+export function parseExceptionDecision(raw, { maxMinutes = EXCEPTION_MAX_MINUTES } = {}) {
+  const deny = (reason) => ({ grant: false, minutes: 0, understood: "", reason, parsed: false });
+
+  const text = String(raw ?? "").trim();
+  if (!text) return deny("模型没有返回内容");
+
+  const candidates = [text];
+  const fenced = /\`\`\`(?:json)?\s*([\s\S]*?)\`\`\`/i.exec(text);
+  if (fenced) candidates.push(fenced[1]);
+  const braced = /\{[\s\S]*\}/.exec(text);
+  if (braced) candidates.push(braced[0]);
+
+  for (const candidate of candidates) {
+    try {
+      const data = JSON.parse(candidate);
+      if (!data || typeof data !== "object") continue;
+      const grant = data.grant === true;
+      const rawMinutes = Number(data.minutes);
+      const minutes = grant
+        ? Math.max(0, Math.min(maxMinutes, Number.isFinite(rawMinutes) ? Math.round(rawMinutes) : 0))
+        : 0;
+      return {
+        grant,
+        minutes,
+        understood: String(data.understood ?? "").slice(0, 60),
+        reason: String(data.reason ?? "").slice(0, 80),
+        parsed: true,
+      };
+    } catch {
+      /* 试下一个候选 */
+    }
+  }
+
+  return deny("模型没有按要求返回可解析的判断");
+}
+
+/**
  * 创建 AI 客户端。
  *
  * @param {{
@@ -246,6 +336,58 @@ export function createAIClient(options = {}) {
         entries[key] = text;
         writeCache(entries);
         return { ok: true, text, cached: false };
+      } catch (error) {
+        return { ok: false, reason: error?.name === "AbortError" ? "timeout" : "network" };
+      } finally {
+        clearTimeout(timeout);
+        signal?.removeEventListener?.("abort", onExternalAbort);
+      }
+    },
+
+    /**
+     * 裁定一次例外说明。
+     *
+     * 与 generate() 的区别：**这里不缓存**。例外是"此刻这个情况"，
+     * 同样的文字在不同日子应当重新判断，缓存会导致昨天的裁定被套用到今天。
+     *
+     * @returns {Promise<{ok: boolean, grant?: boolean, minutes?: number, understood?: string, reason: string}>}
+     */
+    async decideException(scene, userText, { signal, maxMinutes = EXCEPTION_MAX_MINUTES } = {}) {
+      const config = getConfig();
+      if (!config?.enabled) return { ok: false, reason: "disabled" };
+      if (!config?.apiKey) return { ok: false, reason: "no-api-key" };
+      if (!fetchImpl) return { ok: false, reason: "fetch-unavailable" };
+      const said = String(userText ?? "").trim();
+      if (!said) return { ok: false, reason: "empty-input" };
+
+      const controller = new AbortController();
+      // 裁定要让用户等着，超时比文案生成更短一些，避免卡住熄灯界面
+      const timeout = setTimeout(() => controller.abort(), Math.min(config.timeoutMs ?? 12_000, 10_000));
+      const onExternalAbort = () => controller.abort();
+      signal?.addEventListener?.("abort", onExternalAbort, { once: true });
+
+      try {
+        const response = await fetchImpl(`${config.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${config.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: config.model,
+            // 裁定要稳定，不要发挥 —— 与文案生成用不同的温度
+            temperature: 0.2,
+            max_tokens: 220,
+            messages: buildExceptionMessages(scene, said, { maxMinutes }),
+          }),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) return { ok: false, reason: `http-${response.status}` };
+
+        const payload = await response.json();
+        const decision = parseExceptionDecision(payload?.choices?.[0]?.message?.content ?? "", { maxMinutes });
+        return { ok: true, ...decision };
       } catch (error) {
         return { ok: false, reason: error?.name === "AbortError" ? "timeout" : "network" };
       } finally {
