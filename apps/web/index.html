@@ -399,6 +399,28 @@
     </figcaption>
   </figure>
 
+  <!--
+    例外说明。
+    规则系统只能一刀切：到点就锁，锁到设定时间。但真实生活充满例外，
+    而例外正是规则的天敌 —— 这是整个产品里 AI **唯一不可被规则替代**的地方。
+    用户用一句话说明情况，由模型判断是否值得放宽、放宽多少。
+  -->
+  <section class="exception" id="exception-block" hidden>
+    <button type="button" class="link" id="btn-exception">有事要说明？</button>
+
+    <form class="exception__form" id="exception-form" hidden>
+      <input
+        type="text"
+        id="exception-input"
+        maxlength="60"
+        placeholder="例如：今晚要加班"
+        autocomplete="off" />
+      <button type="submit" class="btn btn--primary" id="btn-exception-submit">交给 AI 判断</button>
+    </form>
+
+    <div class="exception__verdict" id="exception-verdict" hidden></div>
+  </section>
+
   <nav class="blackout__actions">
     <button type="button" class="action" id="btn-open-whitelist">
       <svg class="action__icon"><use href="#i-apps" /></svg>

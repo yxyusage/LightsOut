@@ -24,7 +24,79 @@ export function createBlackoutView(ctx) {
     demo: $("#blackout-demo"),
     tapHint: $("#tap-hint"),
     tapHintText: $("#tap-hint-text"),
+    exceptionBlock: $("#exception-block"),
+    exceptionTrigger: $("#btn-exception"),
+    exceptionForm: $("#exception-form"),
+    exceptionInput: $("#exception-input"),
+    exceptionSubmit: $("#btn-exception-submit"),
+    exceptionVerdict: $("#exception-verdict"),
   };
+
+  /* ───────── 例外说明（AI 裁定）───────── */
+
+  let exceptionBusy = false;
+
+  els.exceptionTrigger.addEventListener("click", () => {
+    setHidden(els.exceptionForm, false);
+    setHidden(els.exceptionTrigger, true);
+    setHidden(els.exceptionVerdict, true);
+    els.exceptionInput.focus();
+  });
+
+  els.exceptionForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (exceptionBusy) return;
+    const said = els.exceptionInput.value.trim();
+    if (!said) return;
+
+    exceptionBusy = true;
+    setText(els.exceptionSubmit, "判断中…");
+    els.exceptionSubmit.disabled = true;
+    setHidden(els.exceptionVerdict, false);
+    els.exceptionVerdict.className = "exception__verdict";
+    setText(els.exceptionVerdict, "AI 正在判断这个情况…");
+
+    const result = await ctx.actions.decideException(said);
+
+    exceptionBusy = false;
+    setText(els.exceptionSubmit, "交给 AI 判断");
+    els.exceptionSubmit.disabled = false;
+
+    if (!result.ok) {
+      els.exceptionVerdict.className = "exception__verdict is-error";
+      setText(els.exceptionVerdict, result.message);
+      return;
+    }
+
+    const d = result.decision;
+    // 把 AI 的判断过程原样展示出来。
+    // 只给结论会让人以为"随便说说就能免锁"，而看清它识别了什么、为什么这么判，
+    // 才建立得起信任 —— 这也是这个产品最重要的东西。
+    const lines = [];
+    if (d.understood) lines.push(`识别到：${d.understood}`);
+    if (result.grant) {
+      lines.push(`判断：可以放宽 ${d.minutes} 分钟`);
+    } else {
+      lines.push("判断：不构成需要放宽的情况");
+    }
+    if (d.reason) lines.push(d.reason);
+    if (result.grant) {
+      lines.push(`本次消耗 1 次紧急解除额度，本周还剩 ${result.remaining} 次。`);
+    } else {
+      lines.push("没有消耗额度。");
+    }
+
+    els.exceptionVerdict.className = `exception__verdict ${result.grant ? "is-granted" : "is-denied"}`;
+    setText(els.exceptionVerdict, lines.join("\n"));
+    if (result.grant) els.exceptionInput.value = "";
+  });
+
+  function resetExceptionPanel() {
+    setHidden(els.exceptionForm, true);
+    setHidden(els.exceptionTrigger, false);
+    setHidden(els.exceptionVerdict, true);
+    els.exceptionInput.value = "";
+  }
 
   let lastCopyId = null;
   let copySwapTimer = null;
@@ -121,6 +193,29 @@ export function createBlackoutView(ctx) {
 
     const remainingMinutes = Math.ceil(snapshot.whitelistRemainingMs / 60_000);
     setText(els.badge, remainingMinutes > 0 ? `${remainingMinutes} 分` : "已用尽");
+
+    // 例外入口：只在"有 AI 可用 + 真实熄灯中 + 额度没耗尽"时出现。
+    // 演示模式不显示 —— 那里没有真实的时段，放宽它没有意义。
+    const canAskException =
+      ctx.ai.available && !ui.isDemo() && !snapshot.whitelist.exhausted && snapshot.phase === core.PHASE.ACTIVE;
+    setHidden(els.exceptionBlock, !canAskException);
+
+    // 已经放宽过：把结论常驻显示，让"今晚为什么能再熬一会儿"始终有据可查
+    if (snapshot.exception && snapshot.exception.extraMs > 0) {
+      const mins = Math.round(snapshot.exception.extraMs / 60_000);
+      setHidden(els.exceptionVerdict, false);
+      els.exceptionVerdict.className = "exception__verdict is-granted";
+      setText(
+        els.exceptionVerdict,
+        [
+          snapshot.exception.understood ? `识别到：${snapshot.exception.understood}` : "",
+          `判断：今晚放宽 ${mins} 分钟`,
+          snapshot.exception.reason ?? "",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      );
+    }
   }
 
   /** 离开熄灯界面时复位，保证下次进入从第一句文案开始 */
@@ -131,6 +226,8 @@ export function createBlackoutView(ctx) {
     tapCounter.reset();
     setHidden(els.tapHint, true);
     els.copy.classList.remove("is-fading");
+    // 收起例外面板：上次的裁定结论不该带到下一次熄灯
+    resetExceptionPanel();
   }
 
   $("#btn-open-whitelist").addEventListener("click", () => ctx.actions.openSheet("whitelist"));

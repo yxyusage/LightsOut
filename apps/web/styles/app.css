@@ -484,6 +484,58 @@ input[type="range"]::-moz-range-thumb {
 .hint--warn { color: var(--lamp); }
 .hint--error { color: var(--danger); }
 
+/* ───────────── 例外说明（AI 裁定）───────────── */
+
+/*
+  熄灯界面里唯一带输入的地方。
+  它必须是"安静的" —— 深夜黑屏上不该出现一个抢眼的表单，
+  所以默认只露一行文字链接，点开才展开。
+*/
+.exception {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 0 24px;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  width: 100%;
+}
+.exception .link { color: var(--text-faint); font-size: 0.78rem; }
+.exception .link:hover { color: var(--lamp-soft); }
+
+.exception__form { display: flex; gap: 8px; width: 100%; }
+.exception__form input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86rem;
+}
+.exception__form input:focus { outline: none; border-color: var(--lamp-deep); }
+.exception__form input::placeholder { color: var(--text-faint); }
+.exception__form .btn { flex: none; padding: 11px 16px; font-size: 0.82rem; }
+
+/* 判断结论：原样展示 AI 识别到了什么、为什么这么判 */
+.exception__verdict {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  line-height: 1.75;
+  white-space: pre-line;   /* 结论是手工拼的多行文本 */
+}
+.exception__verdict.is-granted { border-color: rgba(143, 214, 168, 0.4); }
+.exception__verdict.is-denied { border-color: rgba(255, 255, 255, 0.16); }
+.exception__verdict.is-error { border-color: rgba(255, 155, 138, 0.4); color: var(--danger); }
+
 .page-foot { text-align: center; padding: 26px 0 10px; display: flex; flex-direction: column; gap: 7px; }
 .page-foot p { font-size: 0.7rem; color: var(--text-faint); }
 .page-foot__brand { color: var(--text-dim); letter-spacing: 0.04em; }

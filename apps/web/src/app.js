@@ -353,7 +353,13 @@ const actions = {
   /* ── AI ── */
 
   saveAISettings(patch) {
-    settingsStore.update({ ai: patch });
+    // 填了 API Key 就默认打开 —— 用户去申请一个 Key 本身就是"我要用它"的表示。
+    // 让他填完还要再手动拨一次开关，是没必要的摩擦。
+    const withDefault = { ...patch };
+    if (patch && typeof patch.apiKey === "string" && patch.apiKey.trim() && patch.enabled === undefined) {
+      withDefault.enabled = true;
+    }
+    settingsStore.update({ ai: withDefault });
     render();
   },
 
@@ -448,6 +454,51 @@ const actions = {
     applyScreen();
     render();
     toast("已清除全部本地数据");
+  },
+
+  /**
+   * 请 AI 裁定一次例外说明。
+   *
+   * 流程刻意做成「先判断、后扣额度」：模型认为不值得放宽时**一分额度都不扣**，
+   * 用户不会因为说了一句话就损失一次解除机会。
+   *
+   * 这是整个产品里 AI 唯一不可被规则替代的地方 —— 规则只能一刀切地按 23:00 锁屏，
+   * 只有模型能判断"这句话是不是值得破例的一次性情况"。
+   */
+  async decideException(text) {
+    const said = String(text ?? "").trim();
+    if (!said) return { ok: false, message: "先写一句说明吧" };
+    if (!ai.available) {
+      return { ok: false, message: "AI 尚未配置。到「设置 → AI 场景化文案」里选一个服务商、填入 API Key 即可使用。" };
+    }
+
+    const snapshot = engine.snapshot();
+    const decision = await ai.decideException(snapshot.scene, said);
+    if (!decision.ok) {
+      const known = {
+        timeout: "AI 响应超时，稍后再试",
+        network: "网络不通，稍后再试",
+        "http-401": "API Key 无效或没有权限",
+        "http-429": "请求太频繁，稍后再试",
+      };
+      return { ok: false, message: known[decision.reason] ?? `AI 暂时不可用（${decision.reason}）` };
+    }
+
+    // 模型认为不值得放宽 —— 不扣额度，只把判断理由给用户看
+    if (!decision.grant) return { ok: true, grant: false, decision };
+
+    const granted = engine.grantException(decision);
+    if (!granted.ok) {
+      const known = {
+        "quota-exhausted": "本周的紧急解除额度已经用完，无法再放宽。",
+        "not-active": "当前不在熄灯时段内。",
+        "no-extension": "AI 认为不必改动今晚的时段。",
+      };
+      return { ok: false, message: known[granted.reason] ?? "无法放宽" };
+    }
+
+    render();
+    return { ok: true, grant: true, decision, remaining: granted.remaining };
   },
 };
 
@@ -695,11 +746,56 @@ async function registerServiceWorker() {
   }
 }
 
+/**
+ * `?action=status` 可调用入口。
+ *
+ * 参赛条款六.1.2 要求作品具备「可被调用」的技术特性。产品主体是一个网页，
+ * 这里补一个只读的调用入口：外部（脚本、其它智能体、平台）可以直接问它
+ * "现在是什么状态"，拿到结构化 JSON —— 于是它不只是一个网页，而是可被调用的。
+ *
+ * 刻意保持只读：这个接口**不能修改任何状态**（不能解锁、不能改计划），
+ * 否则它就成了一条绕过熄灯的通道。能力边界在这里同样是硬约束。
+ */
+function respondToStatusQuery() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("action") !== "status") return false;
+
+  const snapshot = engine.snapshot();
+  const payload = {
+    app: "熄灯早睡",
+    version: "v" + APP_VERSION,
+    callable: "?action=status",
+    at: snapshot.at.toISOString(),
+    phase: snapshot.phase,
+    scene: snapshot.scene.scene,
+    sceneLabel: snapshot.scene.sceneLabel,
+    window: snapshot.window
+      ? { start: snapshot.window.start.toISOString(), end: snapshot.window.end.toISOString() }
+      : null,
+    remainingMs: snapshot.remainingMs,
+    quota: { remaining: snapshot.quota.remaining, total: snapshot.quota.total },
+    exception: snapshot.exception
+      ? { extraMs: snapshot.exception.extraMs, reason: snapshot.exception.reason }
+      : null,
+    aiText: snapshot.copy?.text ?? null,
+    // 说明这次调用的性质，避免被误当成控制接口
+    note: "只读状态查询。本接口不能修改任何状态。",
+  };
+
+  document.body.textContent = JSON.stringify(payload, null, 2);
+  document.body.style.cssText =
+    "margin:0;padding:24px;background:#0c0c0f;color:#c8c8c8;font:13px/1.6 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap";
+  return true;
+}
+
 function boot() {
   // 版本号只有一处定义（见文件顶部的 APP_VERSION），注入到所有页脚。
   document.querySelectorAll("[data-app-version]").forEach((node) => {
     node.textContent = "v" + APP_VERSION;
   });
+
+  // 可调用入口：命中时直接输出 JSON，不启动界面
+  if (respondToStatusQuery()) return;
 
   applyScreen();
   if (ui.screen === "onboarding") onboardingView.show();
