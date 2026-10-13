@@ -26,7 +26,9 @@ import { createOnboardingView } from "./views/onboarding.js";
 import { createProfileView } from "./views/profile.js";
 import { createSheets } from "./views/sheets.js";
 
-const DEMO_DURATION_MS = 2 * 60_000;
+// 演示用 30 秒：短到不用等，长到能看清呼吸光晕、文案轮播与"今夜进度"。
+// 原来 2 分钟对评审是纯粹的等待 —— 他只是想看一眼效果。
+const DEMO_DURATION_MS = 30_000;
 const TICK_MS = 250;
 const DEMO_KEY = "xideng.demo.until";
 
