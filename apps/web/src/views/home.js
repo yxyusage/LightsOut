@@ -131,11 +131,17 @@ export function createHomeView(ctx) {
     warnChips.update();
     els.sundayAsWeekday.checked = settings.plan.sundayAsWeekday !== false;
 
-    // 时段摘要
+    // 时段摘要：只有两套时段**不同**时才值得显示。
+    // 相同时，上面每一行下面已经各写了一遍"23:00 → 次日 07:00 · 共 8 小时"，
+    // 这一行纯属重复 —— 满屏重复信息是廉价感的主要来源之一。
     const windows = settings.plan.windows;
+    const weekdayWindow = describeWindow(windows[DAY_TYPE.WEEKDAY]);
+    const weekendWindow = describeWindow(windows[DAY_TYPE.WEEKEND]);
+    const windowsDiffer = weekdayWindow !== weekendWindow;
+    setHidden(els.windowSummary, !windowsDiffer);
     setText(
       els.windowSummary,
-      `工作日 ${describeWindow(windows[DAY_TYPE.WEEKDAY])}；周末 ${describeWindow(windows[DAY_TYPE.WEEKEND])}`,
+      windowsDiffer ? `工作日 ${weekdayWindow}；周末 ${weekendWindow}` : "",
     );
 
     // 白名单摘要
