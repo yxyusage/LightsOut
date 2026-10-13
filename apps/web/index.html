@@ -506,20 +506,37 @@
       <p class="hint">
         关闭时使用内置文案库，功能完全不受影响。启用后需要填写你自己的大模型接口。
       </p>
+      <!--
+        服务商选择放在最前面：原先只有三个空白输入框（地址/模型/Key），
+        普通用户根本不知道该填什么 —— 这是配置 AI 时最大的一道门槛。
+        现在选一家，地址与模型自动填好，用户只需要粘一个 API Key。
+      -->
       <div class="field">
-        <label for="ai-baseurl">接口地址（OpenAI 兼容）</label>
-        <input type="url" id="ai-baseurl" placeholder="https://api.openai.com/v1" />
+        <label for="ai-provider">服务商</label>
+        <select id="ai-provider"></select>
+        <p class="hint" id="ai-provider-note"></p>
       </div>
-      <div class="field">
-        <label for="ai-model">模型名称</label>
-        <input type="text" id="ai-model" placeholder="gpt-4o-mini" />
-      </div>
+
       <div class="field">
         <label for="ai-apikey">API Key</label>
-        <input type="password" id="ai-apikey" placeholder="sk-..." autocomplete="off" />
+        <input type="password" id="ai-apikey" placeholder="把申请到的 Key 粘贴到这里" autocomplete="off" />
       </div>
+
+      <!-- 地址与模型通常不用改，收进「高级」避免吓退普通用户 -->
+      <details class="advanced">
+        <summary>高级设置（接口地址与模型名）</summary>
+        <div class="field">
+          <label for="ai-baseurl">接口地址（OpenAI 兼容）</label>
+          <input type="url" id="ai-baseurl" placeholder="https://api.deepseek.com/v1" />
+        </div>
+        <div class="field">
+          <label for="ai-model">模型名称</label>
+          <input type="text" id="ai-model" placeholder="deepseek-chat" />
+        </div>
+      </details>
+
       <p class="hint">
-        Key 只保存在你这台设备的 localStorage，请求直接发往你填写的接口地址，不经过任何中转。
+        Key 只保存在你这台设备的 localStorage，请求直接发往上面的接口地址，不经过任何中转。
         请勿在公共设备上填写。
       </p>
       <div class="row">

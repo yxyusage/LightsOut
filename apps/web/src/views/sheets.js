@@ -5,11 +5,14 @@
  */
 
 import {
+  AI_PROVIDERS,
   AUDIO_PRESETS,
   FACT_SOURCES,
   HOLIDAY_TABLE_SOURCE,
   WHITELIST_TOTAL_MINUTES_MAX,
   WHITELIST_TOTAL_MINUTES_MIN,
+  findProvider,
+  providerOfBaseUrl,
 } from "../core.js";
 import { el, icon, replaceChildren, setHidden, setText, toast, toggleClass } from "../lib/dom.js";
 import { createChipGroup, requireElement } from "./controls.js";
@@ -111,11 +114,45 @@ export function createSheets(ctx) {
   /* ───────── AI 配置 ───────── */
   const aiInputs = {
     enabled: requireElement("#ai-enabled"),
+    provider: requireElement("#ai-provider"),
+    providerNote: requireElement("#ai-provider-note"),
     baseUrl: requireElement("#ai-baseurl"),
     model: requireElement("#ai-model"),
     apiKey: requireElement("#ai-apikey"),
     status: requireElement("#ai-status"),
   };
+
+  // 服务商下拉：选中后自动填好接口地址与模型名，用户只需要粘一个 API Key。
+  replaceChildren(
+    aiInputs.provider,
+    AI_PROVIDERS.map((provider) =>
+      el("option", { value: provider.id, text: provider.name, selected: false }),
+    ),
+  );
+
+  /** 把界面切成某个服务商；custom 时清空地址与模型交给用户自己填。 */
+  function applyProvider(id, { overwrite = true } = {}) {
+    const provider = findProvider(id) ?? findProvider("custom");
+    // 默认第一项给个合理的初始值，避免新用户打开就是空白
+    if (!provider) return;
+    setText(aiInputs.providerNote, provider.note ?? "");
+    if (!overwrite) return;
+    if (provider.id === "custom") {
+      aiInputs.baseUrl.value = "";
+      aiInputs.model.value = "";
+      aiInputs.baseUrl.focus();
+      return;
+    }
+    aiInputs.baseUrl.value = provider.baseUrl;
+    aiInputs.model.value = provider.model;
+  }
+
+  aiInputs.provider.addEventListener("change", () => {
+    applyProvider(aiInputs.provider.value);
+    // 换了服务商，原来的 Key 基本不可能还用得上
+    aiInputs.apiKey.value = "";
+    aiInputs.apiKey.focus();
+  });
   requireElement("#btn-ai-save").addEventListener("click", () => actions.saveAISettings(readAIInputs()));
   requireElement("#btn-ai-test").addEventListener("click", async () => {
     await actions.saveAISettings(readAIInputs());
@@ -140,6 +177,17 @@ export function createSheets(ctx) {
     if (document.activeElement !== aiInputs.model) aiInputs.model.value = ai.model;
     if (document.activeElement !== aiInputs.apiKey) aiInputs.apiKey.value = ai.apiKey;
     aiInputs.enabled.checked = ai.enabled;
+
+    // 反查当前 baseUrl 属于哪个服务商，把下拉切到对应项。
+    // 找不到（用户手填了别家地址）就落到「自定义」，
+    // 绝不显示成 DeepSeek 而实际填的是别家 —— 那是在骗用户。
+    const matched = providerOfBaseUrl(ai.baseUrl);
+    const providerId = matched ? matched.id : "custom";
+    if (aiInputs.provider.value !== providerId) {
+      aiInputs.provider.value = providerId;
+    }
+    applyProvider(providerId, { overwrite: false });
+    setText(aiInputs.providerNote, matched ? matched.note ?? "" : "当前填写的地址不在预设列表里。");
     if (!aiInputs.status.textContent.trim()) {
       setText(
         aiInputs.status,

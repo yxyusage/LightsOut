@@ -13,6 +13,90 @@
 
 import { describeScene } from "./scene.js";
 
+/**
+ * 主流大模型服务商预设。
+ *
+ * 为什么需要这个：原先界面上只有三个空白输入框（接口地址 / 模型名 / API Key），
+ * 普通用户根本不知道该填什么 —— 这是配置 AI 时最大的一道门槛。
+ * 现在选一个服务商，地址与模型名自动填好，用户只需要粘一个 API Key。
+ *
+ * 全部都是 **OpenAI 兼容**接口，因此调用代码只有一套，新增服务商只是加一行数据。
+ * baseUrl 末尾不要带斜杠（调用处会自行处理）。
+ */
+export const AI_PROVIDERS = [
+  {
+    id: "deepseek",
+    name: "DeepSeek 深度求索",
+    baseUrl: "https://api.deepseek.com/v1",
+    model: "deepseek-chat",
+    note: "国内直连，价格便宜",
+  },
+  {
+    id: "dashscope",
+    name: "阿里通义千问",
+    baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    model: "qwen-plus",
+    note: "阿里云百炼，有免费额度",
+  },
+  {
+    id: "zhipu",
+    name: "智谱 GLM",
+    baseUrl: "https://open.bigmodel.cn/api/paas/v4",
+    model: "glm-4-flash",
+    note: "glm-4-flash 免费",
+  },
+  {
+    id: "moonshot",
+    name: "月之暗面 Kimi",
+    baseUrl: "https://api.moonshot.cn/v1",
+    model: "moonshot-v1-8k",
+    note: "国内直连",
+  },
+  {
+    id: "siliconflow",
+    name: "硅基流动 SiliconFlow",
+    baseUrl: "https://api.siliconflow.cn/v1",
+    model: "Qwen/Qwen2.5-7B-Instruct",
+    note: "聚合多家开源模型，有免费额度",
+  },
+  {
+    id: "openai",
+    name: "OpenAI",
+    baseUrl: "https://api.openai.com/v1",
+    model: "gpt-4o-mini",
+    note: "需要海外网络环境",
+  },
+  {
+    id: "ollama",
+    name: "本地 Ollama",
+    baseUrl: "http://localhost:11434/v1",
+    model: "qwen2.5",
+    note: "跑在自己电脑上，不联网、不花钱",
+  },
+  {
+    id: "custom",
+    name: "自定义（其它 OpenAI 兼容接口）",
+    baseUrl: "",
+    model: "",
+    note: "自己填写地址与模型名",
+  },
+];
+
+/** 按 id 取服务商；取不到返回 undefined。 */
+export function findProvider(id) {
+  return AI_PROVIDERS.find((provider) => provider.id === id);
+}
+
+/**
+ * 反查某个 baseUrl 属于哪个服务商。
+ * 用户手填过地址时，用它把下拉框切到对应项，避免"显示 DeepSeek 实际填的是别家"。
+ */
+export function providerOfBaseUrl(baseUrl) {
+  const normalized = String(baseUrl ?? "").replace(/\/+$/, "");
+  if (!normalized) return undefined;
+  return AI_PROVIDERS.find((provider) => provider.baseUrl.replace(/\/+$/, "") === normalized);
+}
+
 export const AI_SYSTEM_PROMPT = [
   "你是「熄灯早睡」这款助眠应用里的夜间文案作者。",
   "用户已经进入强制熄灯模式，正躺在黑暗里准备入睡。",
