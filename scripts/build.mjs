@@ -57,8 +57,49 @@ async function main() {
     throw new Error(`发布产物中仍残留仓库内路径引用：\n${leaked.join("\n")}`);
   }
 
+  // 5. 由预缓存内容的哈希生成 Service Worker 缓存版本
+  await stampServiceWorkerVersion();
+
   console.log("构建完成 →", distDir);
   console.log("用 `node scripts/serve.mjs dist` 本地预览，或把 dist/ 整个目录上传到任意静态托管。");
+}
+
+/**
+ * 把 Service Worker 的 CACHE_VERSION 换成"预缓存内容哈希"。
+ *
+ * ⚠️ 这一条是踩过坑的：PWA 的缓存只在 **sw.js 自身内容变化**时才更新。
+ * 只要改了 app.js 而没动 sw.js，浏览器就会一直用缓存里的旧 app.js ——
+ * 用户看到的是"修复没生效"，而其实是缓存。我改过演示时长却仍显示 2 分钟，就是这个原因。
+ *
+ * 靠人记得改版本号是不可靠的。这里改成由内容自动决定：
+ * 预缓存的任何一个文件变了，版本号就变，SW 必然更新。
+ */
+async function stampServiceWorkerVersion() {
+  const { createHash } = await import("node:crypto");
+  const swPath = join(distDir, "sw.js");
+  if (!existsSync(swPath)) return;
+
+  const sw = await readFile(swPath, "utf8");
+  const listMatch = /const\s+APP_SHELL\s*=\s*\[([\s\S]*?)\]/.exec(sw);
+  if (!listMatch) throw new Error("sw.js 里找不到 APP_SHELL，无法生成缓存版本");
+
+  const entries = [...listMatch[1].matchAll(/["']([^"']+)["']/g)].map((m) => m[1]);
+
+  // 按固定顺序累加内容，保证同样的产物得到同样的版本号（可复现）
+  const hash = createHash("sha256");
+  for (const entry of [...entries].sort()) {
+    const relative = entry.replace(/^\.\//, "");
+    const file = relative === "" ? join(distDir, "index.html") : join(distDir, relative);
+    if (!existsSync(file)) continue;
+    hash.update(relative);
+    hash.update(await readFile(file));
+  }
+  const version = "xideng-" + hash.digest("hex").slice(0, 12);
+
+  const stamped = sw.replace(/const\s+CACHE_VERSION\s*=\s*["'][^"']*["']/, `const CACHE_VERSION = "${version}"`);
+  if (stamped === sw) throw new Error("sw.js 里找不到 CACHE_VERSION，无法写入缓存版本");
+  await writeFile(swPath, stamped, "utf8");
+  console.log("  Service Worker 缓存版本 →", version);
 }
 
 /**
