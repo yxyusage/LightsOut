@@ -260,12 +260,21 @@
       </div>
     </section>
 
-    <!-- AI -->
+    <!--
+      AI 卡片。
+      标题不再是"场景化文案" —— AI 现在有两种职责：
+      生成睡前文案，以及裁定例外情况（规则做不到的那件事）。
+      把配置藏在"文案"里会让人以为它只是个装饰功能。
+    -->
     <section class="card">
-      <h2><svg class="card__icon"><use href="#i-sparkles" /></svg>AI 场景化文案</h2>
+      <h2><svg class="card__icon"><use href="#i-sparkles" /></svg>AI 智能判断</h2>
       <p class="hint" id="ai-summary">—</p>
+      <ul class="plain-list ai-roles">
+        <li>生成贴合今晚的睡前文案</li>
+        <li>判断「今晚要加班」这类例外是否值得放宽，以及放宽多少</li>
+      </ul>
       <div class="row">
-        <button type="button" class="btn" id="btn-ai-config">配置</button>
+        <button type="button" class="btn btn--primary" id="btn-ai-config">配置 AI</button>
         <button type="button" class="btn btn--ghost" id="btn-sources">数据溯源</button>
       </div>
     </section>
@@ -517,7 +526,7 @@
   <div class="sheet__backdrop" data-close></div>
   <div class="sheet__panel">
     <header class="sheet__head">
-      <h2>AI 场景化文案</h2>
+      <h2>配置 AI</h2>
       <button type="button" class="icon-btn" data-close aria-label="关闭"><svg><use href="#i-close" /></svg></button>
     </header>
     <div class="sheet__body">
@@ -526,7 +535,17 @@
         <span>启用 AI 生成睡前文案</span>
       </label>
       <p class="hint">
-        关闭时使用内置文案库，功能完全不受影响。启用后需要填写你自己的大模型接口。
+        关闭时使用内置文案库，功能完全不受影响，但**无法裁定例外情况**。
+        启用后需要填一个你自己的大模型 API Key。
+      </p>
+
+      <!--
+        浏览器直连大模型会遇到跨域限制，这是部署在静态托管上的固有限制。
+        与其让用户对着一个"测试连接失败"发呆，不如提前说清楚。
+      -->
+      <p class="hint">
+        说明：请求由你的浏览器**直接发往**所选服务商，Key 不会经过本站或任何中转。
+        代价是少数服务商不允许浏览器直接调用（跨域限制），若测试连接失败可换一家试试。
       </p>
       <!--
         服务商选择放在最前面：原先只有三个空白输入框（地址/模型/Key），

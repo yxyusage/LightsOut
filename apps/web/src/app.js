@@ -353,12 +353,18 @@ const actions = {
   /* ── AI ── */
 
   saveAISettings(patch) {
-    // 填了 API Key 就默认打开 —— 用户去申请一个 Key 本身就是"我要用它"的表示。
-    // 让他填完还要再手动拨一次开关，是没必要的摩擦。
+    const previous = settingsStore.value.ai ?? {};
     const withDefault = { ...patch };
-    if (patch && typeof patch.apiKey === "string" && patch.apiKey.trim() && patch.enabled === undefined) {
-      withDefault.enabled = true;
-    }
+
+    // 填了 API Key 就默认打开 —— 用户去申请一个 Key 本身就是"我要用它"的表示。
+    //
+    // ⚠️ 判断依据必须是**「从没有 Key 变成有 Key」这个变化**，而不是开关的当前状态：
+    // readAIInputs() 永远会带上 enabled 字段（来自复选框），所以之前写成
+    // `patch.enabled === undefined` 时条件永远不成立，自动启用从来没生效过。
+    const hadKey = Boolean(String(previous.apiKey ?? "").trim());
+    const hasKey = Boolean(String(withDefault.apiKey ?? "").trim());
+    if (hasKey && !hadKey) withDefault.enabled = true;
+
     settingsStore.update({ ai: withDefault });
     render();
   },

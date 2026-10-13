@@ -162,7 +162,11 @@ export function createHomeView(ctx) {
 
     // AI 摘要
     const ai = settings.ai;
-    if (!ai.enabled) setText(els.aiSummary, "未启用 · 正在使用内置文案库（功能完整）");
+    // 摘要要如实反映 AI 现在的两种职责（生成文案 + 裁定例外），
+    // 而不再只是"文案"。AI 未启用时也不必显得像坏了 —— 功能本来就是完整的。
+    if (!ai.enabled) {
+      setText(els.aiSummary, "未启用 · 用内置文案库，无法裁定例外情况");
+    }
     else if (!ai.apiKey) setText(els.aiSummary, "已启用但未填写 API Key · 暂时仍使用内置文案库");
     else setText(els.aiSummary, `已启用 · ${ai.model} · 已缓存 ${ctx.ai.cacheSize()} 条文案`);
   }

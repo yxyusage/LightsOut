@@ -536,6 +536,19 @@ input[type="range"]::-moz-range-thumb {
 .exception__verdict.is-denied { border-color: rgba(255, 255, 255, 0.16); }
 .exception__verdict.is-error { border-color: rgba(255, 155, 138, 0.4); color: var(--danger); }
 
+/* AI 卡片里的职责说明：让"它能做什么"一眼可见，而不是一句"场景化文案" */
+.ai-roles { margin-top: 12px; font-size: 0.78rem; }
+.ai-roles li { gap: 8px; }
+.ai-roles li::before {
+  content: "";
+  flex: none;
+  width: 4px;
+  height: 4px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: var(--lamp-deep);
+}
+
 .page-foot { text-align: center; padding: 26px 0 10px; display: flex; flex-direction: column; gap: 7px; }
 .page-foot p { font-size: 0.7rem; color: var(--text-faint); }
 .page-foot__brand { color: var(--text-dim); letter-spacing: 0.04em; }
