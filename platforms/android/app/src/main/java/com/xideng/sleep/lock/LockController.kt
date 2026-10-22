@@ -38,6 +38,14 @@ class LockController(private val context: Context, private val graph: AppGraph) 
     @Volatile
     private var lastPhase: Phase = Phase.OFF
 
+    /**
+     * 上一次已提醒过的防护降级状态（用于去重）。
+     *
+     * 看门狗每 15 分钟复查一次，同一个降级原因只该提醒一次，
+     * 否则就变成每 15 分钟一条的骚扰通知。
+     */
+    private var lastDegradedSignature: String? = null
+
     /** 演示模式的截止时刻（毫秒）。0 表示未开启。仅存在于内存，进程重启即失效。 */
     @Volatile
     private var demoUntilMs: Long = 0L
@@ -348,6 +356,7 @@ class LockController(private val context: Context, private val graph: AppGraph) 
 
         if (accessibilityOk && batteryOk) {
             NotificationHelper.cancel(context, Constants.NOTIFICATION_ID_DEGRADED)
+            lastDegradedSignature = null
             return
         }
 
@@ -358,7 +367,17 @@ class LockController(private val context: Context, private val graph: AppGraph) 
             if (!accessibilityOk) add("无障碍服务已被系统关闭，「切走再回来会被拉回」这一层失效")
             if (!batteryOk) add("本应用未加入电池优化白名单，夜间容易被系统冻结")
         }
-        NotificationHelper.postDegradedProtection(context, reasons.joinToString("；"))
+        val signature = reasons.joinToString("；")
+
+        // ⚠️ 只在**降级状态发生变化**时提醒一次。
+        //
+        // 看门狗每 15 分钟跑一次，如果不做去重，一个没开电池优化（这是绝大多数用户）
+        // 的人会被这条通知每 15 分钟骚扰一次 —— 那就从"提醒"变成了"垃圾通知"，
+        // 用户第一件事就是关掉通知权限，连带把熄灯本身的常驻通知也关掉。
+        if (signature == lastDegradedSignature) return
+        lastDegradedSignature = signature
+
+        NotificationHelper.postDegradedProtection(context, signature)
     }
 
     /**

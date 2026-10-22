@@ -67,8 +67,16 @@ class LockForegroundService : Service() {
         lastNotificationKey = "熄灯计划运行中|off"
         registerTimeChangeReceiver()
         // 服务被拉起来的这一刻就把看门狗和主闹钟都续上：
-        // 服务可能是被看门狗拉活的，此时闹钟未必还在
-        graph.controller.armSchedules()
+        // 服务可能是被看门狗拉活的，此时闹钟未必还在。
+        //
+        // ⚠️ 必须兜住异常。armSchedules 会碰 AlarmManager 与 SharedPreferences，
+        // 任何一处抛异常都会让整个 onCreate 失败 —— 前台服务起不来，
+        // 熄灯从此完全不工作，而且用户看不出原因。
+        try {
+            graph.controller.armSchedules()
+        } catch (error: Exception) {
+            // 排闹钟失败不该阻止服务启动：相位判定仍在每秒进行
+        }
         handler.post(ticker)
     }
 

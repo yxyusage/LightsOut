@@ -70,6 +70,14 @@ class BlackoutActivity : AppCompatActivity() {
     /** 本次进入熄灯是否需要用户亲手拉绳（每个时段只要求一次，由 LockController 通过 Intent 告知） */
     private var needPull = false
     private var pullDone = false
+
+    /**
+     * 入场 / 熄灯动画是否正在播放。
+     *
+     * 存在的唯一理由：保护动画不被 onResume 的"落到最终状态"分支打断。
+     * 动画只有 1.5 秒，但在这 1.5 秒里 onResume 完全可能被再次调用。
+     */
+    private var lampAnimating = false
     private var pullTimer: android.os.CountDownTimer? = null
     private var pullStartY = 0f
     private var pullOffset = 0f
@@ -123,7 +131,11 @@ class BlackoutActivity : AppCompatActivity() {
             ACTION_DISMISS -> requestExit()
             ACTION_ENTER -> {
                 // 可能是"新时段开始，请拉绳"，也可能是从后台被重新拉回，按 extra 决定
-                needPull = intent.getBooleanExtra(EXTRA_REQUIRE_PULL, false)
+                val require = intent.getBooleanExtra(EXTRA_REQUIRE_PULL, false)
+                needPull = require
+                // 新的一次"要求拉绳"必须复位完成标志，否则第二次进来会直接跳过拉绳。
+                // 只在明确要求拉绳时复位：普通的"从后台拉回"不该让用户再拉一次。
+                if (require) pullDone = false
             }
         }
     }
@@ -151,15 +163,19 @@ class BlackoutActivity : AppCompatActivity() {
             entering = true
             // 拉绳仪式：本时段还要求过就先进拉绳界面，否则直接播自动动画。
             if (needPull && !pullDone) startPullRitual() else playEnterAnimation()
-        } else {
-            // 本时段已经播过：直接落到熄灯内容，绝不重播动画。
-            // 这一步是"画面来回切"的根治点 —— Activity 重建、重复 startActivity、
-            // 息屏后解锁回到这里，走的都是这条分支。
+        } else if (!lampAnimating) {
+            // 本时段已经播过、且当前没有动画在跑：直接落到熄灯内容。
+            //
+            // ⚠️ !lampAnimating 这个条件是必需的。
+            // 原来没有它，结果动画（1.5 秒）还在跑的时候，只要 onResume 再被调用一次
+            // ——弹窗、Toast、恢复焦点、息屏再亮都会触发——就会走到这里把灯层一刀藏掉，
+            // 入场动画被当场掐断，用户看到的就是"动画没了"。
             binding.lampLayer.visibility = View.GONE
             binding.lampPullHint.visibility = View.GONE
             binding.fadeOverlay.visibility = View.GONE
             binding.nativeContent.alpha = 1f
         }
+        // 动画进行中：什么都不做，让动画自己跑完，由它自己的收尾逻辑切换最终状态。
     }
 
     override fun onPause() {
@@ -512,6 +528,10 @@ class BlackoutActivity : AppCompatActivity() {
             return
         }
 
+        // 等待拉绳期间同样标记为"动画进行中"：
+        // 否则用户息屏再亮、或系统弹个东西导致 onResume 重入时，
+        // 拉绳界面会被 onResume 的收尾分支直接藏掉。
+        lampAnimating = true
         binding.lampLayer.visibility = View.VISIBLE
         binding.lampPullHint.visibility = View.VISIBLE
         binding.nativeContent.alpha = 0f
@@ -597,6 +617,8 @@ class BlackoutActivity : AppCompatActivity() {
         val handle = binding.lampHandle
         val fade = binding.fadeOverlay
 
+        // 动画开始：这段时间内 onResume 不得把灯层藏掉（见 lampAnimating 的说明）
+        lampAnimating = true
         lamp.visibility = View.VISIBLE
         fade.visibility = View.VISIBLE
         fade.alpha = 0f
@@ -610,6 +632,7 @@ class BlackoutActivity : AppCompatActivity() {
         bulb.animate().alpha(0f).setStartDelay(360L).setDuration(700L).start()
         // 3) 屏幕同步渐暗至全黑
         fade.animate().alpha(1f).setStartDelay(900L).setDuration(600L).withEndAction {
+            lampAnimating = false
             lamp.visibility = View.GONE
             fade.visibility = View.GONE
             binding.nativeContent.alpha = 1f
@@ -622,6 +645,7 @@ class BlackoutActivity : AppCompatActivity() {
         val handle = binding.lampHandle
         val fade = binding.fadeOverlay
 
+        lampAnimating = true
         lamp.visibility = View.VISIBLE
         fade.visibility = View.VISIBLE
         fade.alpha = 1f
@@ -631,6 +655,7 @@ class BlackoutActivity : AppCompatActivity() {
         handle.animate().translationY(-dp(14f)).setDuration(360L).start()
         bulb.animate().alpha(1f).setStartDelay(360L).setDuration(700L).start()
         fade.animate().alpha(0f).setStartDelay(900L).setDuration(600L).withEndAction {
+            lampAnimating = false
             lamp.visibility = View.GONE
             fade.visibility = View.GONE
             onComplete()

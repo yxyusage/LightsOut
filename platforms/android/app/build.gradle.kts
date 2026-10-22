@@ -35,11 +35,13 @@ android {
         // 那一次仍然需要先卸载）。
         // 每次修复都要能被区分出来 —— 用户就是靠页脚那行版本号判断"装的是不是新版"。
         // 之前一连串修复都停在 (2)，页脚毫无变化，等于没给出任何判断依据。
-        // 4 / 2.14.0：到点唤醒改用 setAlarmClock（带后台启动豁免）、加 15 分钟看门狗、
-        // 修通知去重导致全屏意图不触发、无障碍三重降级。
-        // 用户手机端自己打的包标的是 2.13.0，这里跳到 2.14.0 以示区分。
-        versionCode = 4
-        versionName = "2.14.0"
+        // 5 / 2.14.1：修 2.14.0 引入的回归。
+        //   · 入场动画被 onResume 的收尾分支掐断（用户反馈"拉绳动画没了"）
+        //   · 前台服务 onCreate 里 armSchedules 未兜异常，可能起不来
+        //   · 防护降级通知每 15 分钟重复发一次
+        //   · 第二次要求拉绳时 pullDone 未复位
+        versionCode = 5
+        versionName = "2.14.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
