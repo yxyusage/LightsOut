@@ -51,5 +51,23 @@
     <color name="xideng_danger">#FFFF9B8A</color>
     <color name="xideng_success">#FF8FD6A8</color>
 
+    <!--
+      Material3 的"容器"颜色角色。
+
+      这是「优化看起来没做」的真正原因：XidengButton 继承自 Widget.Material3.Button.TonalButton，
+      它用的是 colorSecondaryContainer / colorOnSecondaryContainer，
+      而这两个角色**从未被设置过**，于是全部退回 Material3 默认的淡紫灰。
+      琥珀色只作用在 colorPrimary 上，而那几乎只影响涟漪波纹。
+
+      现在把这些角色全部显式指向琥珀体系，按钮、开关、选中态才会真正变成暖色。
+    -->
+    <color name="xideng_on_primary">#FF1A1206</color>
+    <color name="xideng_primary_container">#FF2A2118</color>
+    <color name="xideng_on_primary_container">#FFFFD7A0</color>
+    <color name="xideng_secondary_container">#FF2A2118</color>
+    <color name="xideng_on_secondary_container">#FFFFD7A0</color>
+    <color name="xideng_surface_variant">#FF1A1A21</color>
+    <color name="xideng_on_surface_variant">#FFA9A29A</color>
+
     <color name="ic_launcher_background">#FF0C0C0F</color>
 </resources>

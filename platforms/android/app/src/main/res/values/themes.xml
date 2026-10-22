@@ -1,13 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.Xideng" parent="Theme.Material3.DayNight.NoActionBar">
+    <!--
+      强制 Dark，不用 DayNight。
+
+      这是个真实缺陷：DayNight 跟随系统，用户手机在浅色模式时，
+      Material 组件（按钮、开关、输入框）会用浅色默认值，
+      而我们所有自定义颜色都是深色系 —— 结果是一个"半深半浅"的界面，
+      看起来就像没做过设计。本产品是深夜工具，无论系统设置都必须是深色。
+    -->
+    <style name="Theme.Xideng" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- 主色：琥珀 -->
         <item name="colorPrimary">@color/xideng_primary</item>
-        <item name="colorOnPrimary">@color/xideng_black</item>
-        <item name="colorSecondary">@color/xideng_primary_dark</item>
+        <item name="colorOnPrimary">@color/xideng_on_primary</item>
+        <item name="colorPrimaryContainer">@color/xideng_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/xideng_on_primary_container</item>
+
+        <!--
+          次要色：TonalButton 吃的就是这两个角色。
+          之前没设，所以按钮一直是 Material 默认的淡紫灰。
+        -->
+        <item name="colorSecondary">@color/xideng_primary</item>
+        <item name="colorOnSecondary">@color/xideng_on_primary</item>
+        <item name="colorSecondaryContainer">@color/xideng_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/xideng_on_secondary_container</item>
+
+        <!-- 表面与描边 -->
         <item name="android:colorBackground">@color/xideng_surface</item>
         <item name="colorSurface">@color/xideng_surface_alt</item>
         <item name="colorOnSurface">@color/xideng_text_primary</item>
+        <item name="colorSurfaceVariant">@color/xideng_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/xideng_on_surface_variant</item>
+        <item name="colorOutline">@color/xideng_outline</item>
+        <item name="colorError">@color/xideng_danger</item>
+        <item name="colorOnError">@color/xideng_on_primary</item>
         <item name="android:statusBarColor">@color/xideng_surface</item>
         <item name="android:navigationBarColor">@color/xideng_surface</item>
         <item name="android:windowLightStatusBar">false</item>

@@ -40,8 +40,11 @@ android {
         //   · 前台服务 onCreate 里 armSchedules 未兜异常，可能起不来
         //   · 防护降级通知每 15 分钟重复发一次
         //   · 第二次要求拉绳时 pullDone 未复位
-        versionCode = 5
-        versionName = "2.14.1"
+        // 6 / 2.14.2：主题从 DayNight 改强制 Dark，并补全 Material3 的颜色角色。
+        //   TonalButton 吃的是 colorSecondaryContainer，之前从未设置过，所以按钮
+        //   一直显示 Material 默认的淡紫灰 —— 这就是"看起来没优化"的真正原因。
+        versionCode = 6
+        versionName = "2.14.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

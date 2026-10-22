@@ -31,17 +31,28 @@
             android:textColor="@color/xideng_text_faint"
             android:textSize="13sp" />
 
+        <!--
+          状态卡。
+
+          原来这里是一个用纯色平涂当背景的 TextView —— 没有圆角、没有内边距层级，
+          视觉上就是"一行字垫了块灰"，与 Web 端的卡片式设计差了整整一个层次。
+          改用 bg_card（16dp 圆角）并加大内边距，让它真正成为一张卡片。
+
+          文字本身由 MainActivity 写入：第一行是状态，第二行是剩余时间。
+          行距与字号按"状态 + 数字"的层级给，不再是一行等大的字。
+        -->
         <TextView
             android:id="@+id/phaseText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
-            android:background="@color/xideng_surface_alt"
+            android:background="@drawable/bg_card"
             android:fontFamily="sans-serif-light"
-            android:paddingStart="16dp"
-            android:paddingTop="14dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="14dp"
+            android:lineSpacingExtra="6dp"
+            android:paddingStart="20dp"
+            android:paddingTop="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="20dp"
             android:text="——"
             android:textColor="@color/xideng_text_primary"
             android:textSize="17sp" />
