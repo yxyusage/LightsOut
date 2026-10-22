@@ -77,8 +77,19 @@ class LockController(private val context: Context, private val graph: AppGraph) 
         //
         // 演示模式不受此门禁限制：那是用户显式点的一次预览，
         // 否则刚装好、还没启用计划的人点"立即预览"会什么都看不到。
+        // ⚠️ 门禁条件必须同时看 plan.enabled。
+        //
+        // 早先只判断 onboarded，而 onboarded 只有在**用户手动拨动计划开关**时才会置 true
+        // （见 SettingsActivity）。如果用户靠旧版本的默认值就已经 plan.enabled = true，
+        // 却从未拨过那个开关，就会出现一个极其难查的组合：
+        //   **计划显示"已启用"，但到点什么都不会发生，打开 App 也救不回来**（同一个门禁）。
+        //
+        // 正确的语义是：用户**显式启用过计划**（plan.enabled）就应该尊重它；
+        // onboarded 只是"是否走完引导"的 UI 概念，不该用来否决一个已启用的计划。
+        // 新安装时 plan.enabled 默认为 false，因此这个条件仍然挡住了"刚装好就乱锁"的情况。
+        val planIsOn = snapshot.settings.plan.enabled
         val gated =
-            if (!snapshot.settings.onboarded && !demoOverride) {
+            if (!snapshot.settings.onboarded && !planIsOn && !demoOverride) {
                 snapshot.copy(phase = Phase.OFF, remainingMs = 0)
             } else {
                 snapshot

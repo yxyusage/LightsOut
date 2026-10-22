@@ -195,18 +195,30 @@ jobs:
           debug 签名，仅供侧载试用，不能上架应用商店。
           **签名指纹固定不变**，因此装过本版之后可以直接覆盖升级，不必先卸载。"
           printf '%s' "$NOTES" > /tmp/notes.md
-          # 固定复用同一个标签并每次覆盖，保证 README 里的固定链接永远指向最新构建
-          gh release view android-latest >/dev/null 2>&1 || gh release create android-latest \
-            --title "Android 最新构建（自动发布）" \
-            --notes "由 GitHub Actions 在 main 分支构建成功后自动更新。debug 签名，仅供侧载试用，不能上架应用商店。" \
-            --latest
-          # 必须是正式发布（不能是 prerelease）：GitHub 的 /releases/latest 与仓库侧栏
-          # 都不显示 prerelease，用户会以为"根本没建 Release"。
-          gh release edit android-latest --notes-file /tmp/notes.md --prerelease=false --latest
-          # 两个附件：带版本名的（推荐，能确认拿到的是哪一版）+ 固定名（README 里的长链接）
-          gh release upload android-latest "/tmp/$NAMED#$NAMED" --clobber
-          gh release upload android-latest "$APK#app-debug.apk" --clobber
-          echo "已发布到 Release: android-latest（$NAMED）"
+
+          # ── 发布策略：一个版本一个 Release，tag = v<版本号> ──
+          #
+          # 早先的做法是永远覆盖同一个标签 android-latest，结果是：
+          #   · 附件只增不减，android-latest 里堆了多个版本的 APK，不知道哪个是最新；
+          #   · 固定文件名 app-debug.apk 会被浏览器/CDN 缓存，用户下到旧包；
+          #   · 没有"这个版本是什么时候发的"这个信息，回退无从下手。
+          #
+          # 现在每个版本有独立的 tag 与独立页面，GitHub 的 Latest 标记指向最新那个，
+          # README 统一链接到 /releases/latest 即可永远拿到最新版。
+          TAG="v$VNAME"
+          TITLE="熄灯早睡 Android $VNAME ($VCODE)"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # 同一版本重复构建（例如修 CI 配置）：更新说明与附件，不新建
+            gh release edit "$TAG" --notes-file /tmp/notes.md --prerelease=false --latest
+          else
+            gh release create "$TAG" --title "$TITLE" --notes-file /tmp/notes.md --prerelease=false --latest
+          fi
+          gh release upload "$TAG" "/tmp/$NAMED#$NAMED" --clobber
+          echo "已发布到 Release: $TAG（$NAMED）"
+          # 顺手把已废弃的固定标签清掉，避免两套链接指向不同版本
+          if gh release view android-latest >/dev/null 2>&1; then
+            gh release delete android-latest --yes --cleanup-tag && echo "已删除旧的 android-latest 标签"
+          fi
 
       # 关键：把构建日志推到一个独立分支。
       # GitHub 的日志下载接口对匿名访问返回 403，推到分支后即可匿名读取，

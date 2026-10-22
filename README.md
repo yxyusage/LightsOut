@@ -18,9 +18,13 @@
 | | |
 | --- | --- |
 | **在线使用**（无需安装） | <https://yxyusage.github.io/LightsOut/> |
-| **Windows 桌面版**（日常使用推荐） | <https://github.com/yxyusage/LightsOut/releases>（`Xideng.Desktop.exe` 单文件，需 .NET 10 Desktop Runtime） |
-| **下载 Android APK** | <https://github.com/yxyusage/LightsOut/releases/download/android-latest/app-debug.apk> |
+| **Windows 桌面版**（日常使用推荐） | <https://github.com/yxyusage/LightsOut/releases/tag/desktop-latest>（`Xideng.Desktop.exe` 自包含单文件，无需安装运行时） |
+| **下载 Android APK** | <https://github.com/yxyusage/LightsOut/releases/latest> |
 | 全部发布版本 | <https://github.com/yxyusage/LightsOut/releases> |
+
+> **下载时请认准带版本号的文件名**，例如 `xideng-2.14.0-debug-4-debug.apk`。
+> 每个版本一个独立的 Release 页面，页面里写明了 sha256 与签名指纹，
+> 装好后可在应用底部核对版本号是否一致。
 
 > **在线版**：打开后点主页的「立即体验熄灯模式」，不必等到晚上 23:00。
 > 手机浏览器「添加到主屏幕」后可全屏独立运行，断网也能打开。
@@ -239,11 +243,19 @@ Android 端是唯一能做到**系统级接管**的形态（设备管理员防�
 Debug APK 由 GitHub Actions 在每次构建成功时自动发布，**无需登录即可下载**：
 
 ```
-https://github.com/yxyusage/LightsOut/releases/download/android-latest/app-debug.apk
+https://github.com/yxyusage/LightsOut/releases/latest
 ```
 
-也可以从 [Releases 页面](https://github.com/yxyusage/LightsOut/releases) 或
-[Actions 的构建产物](https://github.com/yxyusage/LightsOut/actions/workflows/build-android.yml) 获取。
+**发布规则**：一个版本一个独立 Release，tag 形如 `v2.14.0`，
+附件名形如 `xideng-2.14.0-debug-4-debug.apk`。
+
+- `/releases/latest` 永远指向**最新的正式版本**（GitHub 自动维护）
+- 每个 Release 页面都写明 sha256 与签名指纹，可逐字节核对
+- 桌面版在独立的 [desktop-latest](https://github.com/yxyusage/LightsOut/releases/tag/desktop-latest) 里，不与安装包混放
+
+> 早先版本曾把所有构建都覆盖到同一个 `android-latest` 标签上，附件只增不减，
+> 且固定文件名 `app-debug.apk` 会被浏览器缓存 —— 用户下到旧包却无从判断。
+> 现在改为按版本发布，旧包不会再出现。
 
 > 这是 **debug 签名**的包，**不能上架应用商店**，只能侧载安装。
 > 安装后需要在系统设置里逐项授予无障碍、设备管理员、悬浮窗、电池优化白名单等权限，
