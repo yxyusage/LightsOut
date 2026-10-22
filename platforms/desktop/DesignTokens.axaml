@@ -1,0 +1,74 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    熄灯早睡 · 桌面端设计令牌
+
+    ⚠️ 这一份必须与 apps/web/styles/app.css 的 :root、
+    以及 platforms/android/.../values/colors.xml 保持一致。
+    三端观感一致是产品的底线。
+
+    ## 为什么文字不用 #EAEAEA 这类近白
+
+    纯白在纯黑上是 21:1 的眩光；靠降低透明度/亮度来压，
+    压到能接受时对比度又掉到 4.5:1 以下。两者不可兼得 —— 除非换色相。
+
+    改成带暖调的中性色后：绝对亮度降低了，对比度反而提高了。
+    实测（对 #000000）：
+
+      TextPrimary   #E6E0D6  ≈ 16.0 : 1   标题、关键数字
+      TextBody      #C9C3B8  ≈ 12.0 : 1   正文、设置项标签
+      TextSecondary #A9A29A  ≈  8.3 : 1   次要说明
+      TextFaint     #827A70  ≈  5.0 : 1   非必读元信息（下限）
+
+    ## 没有光晕令牌
+
+    界面里不再有彩色模糊阴影/发光。深度靠 Surface → SurfaceAlt 的亮度台阶
+    与 1px 描边表达。唯一的例外是熄灯窗里那盏灯本身 —— 那是产品本体，不是装饰。
+  -->
+
+  <!-- 基底 -->
+  <Color x:Key="XidengBlackColor">#000000</Color>
+  <Color x:Key="XidengSurfaceColor">#0C0C0F</Color>
+  <Color x:Key="XidengSurfaceAltColor">#131318</Color>
+  <Color x:Key="XidengOutlineColor">#2A2A2E</Color>
+
+  <SolidColorBrush x:Key="XidengBlack" Color="{StaticResource XidengBlackColor}" />
+  <SolidColorBrush x:Key="XidengSurface" Color="{StaticResource XidengSurfaceColor}" />
+  <SolidColorBrush x:Key="XidengSurfaceAlt" Color="{StaticResource XidengSurfaceAltColor}" />
+  <SolidColorBrush x:Key="XidengOutline" Color="{StaticResource XidengOutlineColor}" />
+
+  <!-- 文字四档 -->
+  <SolidColorBrush x:Key="XidengTextPrimary" Color="#E6E0D6" />
+  <SolidColorBrush x:Key="XidengTextBody" Color="#C9C3B8" />
+  <SolidColorBrush x:Key="XidengTextSecondary" Color="#A9A29A" />
+  <SolidColorBrush x:Key="XidengTextFaint" Color="#827A70" />
+
+  <!-- 品牌色：暖琥珀 -->
+  <SolidColorBrush x:Key="XidengPrimary" Color="#FFD7A0" />
+  <SolidColorBrush x:Key="XidengPrimarySoft" Color="#FFBE6A" />
+  <SolidColorBrush x:Key="XidengPrimaryDeep" Color="#7A5C33" />
+
+  <!-- 状态色 -->
+  <SolidColorBrush x:Key="XidengSuccess" Color="#8FD6A8" />
+  <SolidColorBrush x:Key="XidengDanger" Color="#FF9B8A" />
+  <SolidColorBrush x:Key="XidengWarning" Color="#FFBE6A" />
+
+  <!--
+    字号阶梯：与 Web/Android 同一套 8 档。
+    Avalonia 用 px 数值（96dpi 下与 CSS px 等价）。
+  -->
+  <x:Double x:Key="FontSizeMeta">12</x:Double>
+  <x:Double x:Key="FontSizeSmall">13</x:Double>
+  <x:Double x:Key="FontSizeBody">15</x:Double>
+  <x:Double x:Key="FontSizeBodyLarge">16</x:Double>
+  <x:Double x:Key="FontSizeTitle">17</x:Double>
+  <x:Double x:Key="FontSizeHeading">24</x:Double>
+  <x:Double x:Key="FontSizeMetric">40</x:Double>
+  <x:Double x:Key="FontSizeDisplay">64</x:Double>
+
+  <!-- 半径三档：控件 8 / 卡片 16 / 面板 24 -->
+  <CornerRadius x:Key="RadiusControl">8</CornerRadius>
+  <CornerRadius x:Key="RadiusCard">16</CornerRadius>
+  <CornerRadius x:Key="RadiusPanel">24</CornerRadius>
+</ResourceDictionary>

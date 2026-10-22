@@ -12,7 +12,7 @@
   <Grid x:Name="Root">
 
     <!-- 渐暗层：入场时由深灰渐隐到纯黑（PRD 4.3「屏幕同步渐暗至全黑」） -->
-    <Border x:Name="DimLayer" Background="#1C1C1C" />
+    <Border x:Name="DimLayer" Background="{StaticResource XidengSurfaceAlt}" />
 
     <!-- 暖光层：熄灯过渡时灯泡的温暖光线随灯亮弱渐变，增强"灯熄灭"的光影感受 -->
     <Border x:Name="WarmGlow" IsHitTestVisible="False" Opacity="0">
@@ -36,18 +36,18 @@
           VerticalAlignment="Center"
           RowDefinitions="Auto,Auto,Auto,Auto">
       <!-- 悬挂绳 -->
-      <Rectangle x:Name="Cord" Grid.Row="0" Width="2" Height="148" Fill="#8A6A3A" HorizontalAlignment="Center" />
+      <Rectangle x:Name="Cord" Grid.Row="0" Width="2" Height="148" Fill="{StaticResource XidengPrimaryDeep}" HorizontalAlignment="Center" />
       <!-- 拉环 -->
       <Ellipse x:Name="Ring" Grid.Row="1" Width="30" Height="30"
-               Stroke="#E0B67E" StrokeThickness="3"
+               Stroke="{StaticResource XidengPrimarySoft}" StrokeThickness="3"
                HorizontalAlignment="Center" Margin="0,2,0,6" />
       <!-- 方形灯座 -->
       <Border x:Name="Base" Grid.Row="2" Width="52" Height="17" CornerRadius="5"
-              BorderBrush="#E0B67E" BorderThickness="3" Background="Transparent"
+              BorderBrush="{StaticResource XidengPrimarySoft}" BorderThickness="3" Background="Transparent"
               HorizontalAlignment="Center" Margin="0,0,0,4" />
       <!-- 灯泡本体：只描边，内部用一层由内向外的暖光暗示"亮着" -->
       <Ellipse x:Name="Bulb" Grid.Row="3" Width="98" Height="98"
-               Stroke="#FFD08A" StrokeThickness="5"
+               Stroke="{StaticResource XidengPrimary}" StrokeThickness="5"
                HorizontalAlignment="Center" Margin="0,2,0,0">
         <Ellipse.Fill>
           <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
@@ -62,9 +62,9 @@
     <!-- 黑屏主界面（PRD 2.2.2） -->
     <Grid x:Name="MainContent" Opacity="0" RowDefinitions="*,Auto">
       <StackPanel Grid.Row="0" Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <TextBlock x:Name="SceneTag" HorizontalAlignment="Center" FontSize="13" Foreground="#6E6E6E" />
-        <TextBlock x:Name="ClockText" HorizontalAlignment="Center" FontSize="76" FontWeight="Light" Foreground="#E8E8E8" />
-        <TextBlock x:Name="RemainingText" HorizontalAlignment="Center" FontSize="17" Foreground="#9A9A9A" />
+        <TextBlock x:Name="SceneTag" HorizontalAlignment="Center" FontSize="13" Foreground="{StaticResource XidengTextFaint}" />
+        <TextBlock x:Name="ClockText" HorizontalAlignment="Center" FontSize="76" FontWeight="Light" Foreground="{StaticResource XidengTextPrimary}" />
+        <TextBlock x:Name="RemainingText" HorizontalAlignment="Center" FontSize="17" Foreground="{StaticResource XidengTextSecondary}" />
         <TextBlock x:Name="CopyText"
                    HorizontalAlignment="Center"
                    FontSize="20"
@@ -73,8 +73,8 @@
                    MaxWidth="640"
                    MinHeight="70"
                    Margin="0,30,0,0"
-                   Foreground="#C8C8C8" />
-        <TextBlock x:Name="QuotaText" HorizontalAlignment="Center" FontSize="13" Foreground="#6E6E6E" Margin="0,8,0,0" />
+                   Foreground="{StaticResource XidengTextBody}" />
+        <TextBlock x:Name="QuotaText" HorizontalAlignment="Center" FontSize="13" Foreground="{StaticResource XidengTextFaint}" Margin="0,8,0,0" />
       </StackPanel>
 
       <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="14" HorizontalAlignment="Center" Margin="0,0,0,44">
@@ -87,8 +87,8 @@
     <!-- 助眠音频面板（PRD 2.3）：内置白噪音循环播放 -->
     <Border x:Name="AudioPanel"
             IsVisible="False"
-            Background="#0F0F0F"
-            BorderBrush="#2A2A2A"
+            Background="{StaticResource XidengSurface}"
+            BorderBrush="{StaticResource XidengOutline}"
             BorderThickness="1"
             CornerRadius="12"
             Padding="22"
@@ -96,8 +96,8 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center">
       <StackPanel Spacing="12">
-        <TextBlock Text="助眠音乐" FontSize="20" Foreground="#DDDDDD" />
-        <TextBlock x:Name="AudioHint" FontSize="13" Foreground="#8A8A8A" TextWrapping="Wrap" MaxWidth="420" />
+        <TextBlock Text="助眠音乐" FontSize="20" Foreground="{StaticResource XidengTextBody}" />
+        <TextBlock x:Name="AudioHint" FontSize="13" Foreground="{StaticResource XidengTextSecondary}" TextWrapping="Wrap" MaxWidth="420" />
         <StackPanel x:Name="AudioPresetButtons" Orientation="Horizontal" Spacing="10" />
         <Button x:Name="AudioCloseButton" Content="关闭" HorizontalAlignment="Right" Padding="18,8" />
       </StackPanel>
@@ -106,8 +106,8 @@
     <!-- 白名单面板（PRD 2.2.3） -->
     <Border x:Name="WhitelistPanel"
             IsVisible="False"
-            Background="#0F0F0F"
-            BorderBrush="#2A2A2A"
+            Background="{StaticResource XidengSurface}"
+            BorderBrush="{StaticResource XidengOutline}"
             BorderThickness="1"
             CornerRadius="12"
             Padding="22"
@@ -115,8 +115,8 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center">
       <StackPanel Spacing="12">
-        <TextBlock Text="白名单应用" FontSize="20" Foreground="#DDDDDD" />
-        <TextBlock x:Name="WhitelistSummary" FontSize="13" Foreground="#8A8A8A" TextWrapping="Wrap" MaxWidth="540" />
+        <TextBlock Text="白名单应用" FontSize="20" Foreground="{StaticResource XidengTextBody}" />
+        <TextBlock x:Name="WhitelistSummary" FontSize="13" Foreground="{StaticResource XidengTextSecondary}" TextWrapping="Wrap" MaxWidth="540" />
         <ScrollViewer MaxHeight="240">
           <StackPanel x:Name="WhitelistList" Spacing="6" />
         </ScrollViewer>
@@ -127,8 +127,8 @@
     <!-- 紧急解除面板（PRD 2.2.5） -->
     <Border x:Name="EmergencyPanel"
             IsVisible="False"
-            Background="#0F0F0F"
-            BorderBrush="#2A2A2A"
+            Background="{StaticResource XidengSurface}"
+            BorderBrush="{StaticResource XidengOutline}"
             BorderThickness="1"
             CornerRadius="12"
             Padding="22"
@@ -136,10 +136,10 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center">
       <StackPanel Spacing="12">
-        <TextBlock Text="紧急解除" FontSize="20" Foreground="#DDDDDD" />
-        <TextBlock x:Name="EmergencyHint" FontSize="13" Foreground="#8A8A8A" TextWrapping="Wrap" MaxWidth="380" />
+        <TextBlock Text="紧急解除" FontSize="20" Foreground="{StaticResource XidengTextBody}" />
+        <TextBlock x:Name="EmergencyHint" FontSize="13" Foreground="{StaticResource XidengTextSecondary}" TextWrapping="Wrap" MaxWidth="380" />
         <TextBox x:Name="PasswordBox" PasswordChar="*" Watermark="输入紧急解除密码" />
-        <TextBlock x:Name="EmergencyMessage" FontSize="13" Foreground="#C97A7A" TextWrapping="Wrap" />
+        <TextBlock x:Name="EmergencyMessage" FontSize="13" Foreground="{StaticResource XidengDanger}" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
           <Button x:Name="EmergencyCancelButton" Content="取消" Padding="18,8" />
           <Button x:Name="EmergencyConfirmButton" Content="解除熄灯" Padding="18,8" />
@@ -151,16 +151,16 @@
          竖排引导文案（绳旁）、倒计时提示；无标语（PRD 2.2.1 增强） -->
     <Grid x:Name="PullLayer" IsVisible="False">
       <!-- 顶部"吸住"横条 + 挂点 -->
-      <Rectangle Height="2" Fill="#3A3A3A" VerticalAlignment="Top" Margin="0,70,0,0" />
-      <Ellipse Width="7" Height="7" Fill="#BFA882" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,65,0,0" />
+      <Rectangle Height="2" Fill="{StaticResource XidengOutline}" VerticalAlignment="Top" Margin="0,70,0,0" />
+      <Ellipse Width="7" Height="7" Fill="{StaticResource XidengPrimaryDeep}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,65,0,0" />
 
       <!-- 拉绳组：绳 + 末端坠，可随拖动下移 -->
       <StackPanel x:Name="PullCordGroup"
                   HorizontalAlignment="Center"
                   VerticalAlignment="Top"
                   Margin="0,70,0,0">
-        <Rectangle x:Name="PullCord" Width="2" Height="200" Fill="#7A5A38" HorizontalAlignment="Center" />
-        <Ellipse x:Name="PullBead" Width="18" Height="18" Fill="#FFD7A0" HorizontalAlignment="Center" Margin="0,10,0,0" />
+        <Rectangle x:Name="PullCord" Width="2" Height="200" Fill="{StaticResource XidengPrimaryDeep}" HorizontalAlignment="Center" />
+        <Ellipse x:Name="PullBead" Width="18" Height="18" Fill="{StaticResource XidengPrimary}" HorizontalAlignment="Center" Margin="0,10,0,0" />
       </StackPanel>
 
       <!-- 竖排引导文案：从上往下，放在拉绳右侧 -->
@@ -170,35 +170,35 @@
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center"
                   Margin="112,0,0,0">
-        <TextBlock Text="拖" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
-        <TextBlock Text="动" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
-        <TextBlock Text="拉" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
-        <TextBlock Text="绳" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
-        <TextBlock Text="，" FontSize="16" FontWeight="Light" Foreground="#6E6E6E" />
-        <TextBlock Text="熄" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
-        <TextBlock Text="灭" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
-        <TextBlock Text="灯" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
-        <TextBlock Text="光" FontSize="16" FontWeight="Light" Foreground="#9A9A9A" />
+        <TextBlock Text="拖" FontSize="16" FontWeight="Light" Foreground="{StaticResource XidengTextSecondary}" />
+        <TextBlock Text="动" FontSize="16" FontWeight="Light" Foreground="{StaticResource XidengTextSecondary}" />
+        <TextBlock Text="拉" FontSize="16" FontWeight="Light" Foreground="{StaticResource XidengTextSecondary}" />
+        <TextBlock Text="绳" FontSize="16" FontWeight="Light" Foreground="{StaticResource XidengTextSecondary}" />
+        <TextBlock Text="，" FontSize="16" FontWeight="Light" Foreground="{StaticResource XidengTextFaint}" />
+        <TextBlock Text="熄" FontSize="16" FontWeight="Light" Foreground="{StaticResource XidengTextSecondary}" />
+        <TextBlock Text="灭" FontSize="16" FontWeight="Light" Foreground="{StaticResource XidengTextSecondary}" />
+        <TextBlock Text="灯" FontSize="16" FontWeight="Light" Foreground="{StaticResource XidengTextSecondary}" />
+        <TextBlock Text="光" FontSize="16" FontWeight="Light" Foreground="{StaticResource XidengTextSecondary}" />
       </StackPanel>
 
       <!-- 倒计时：绳下方 -->
       <TextBlock x:Name="PullCountdown" Text=""
-                 FontSize="13" Foreground="#6E6E6E"
+                 FontSize="13" Foreground="{StaticResource XidengTextFaint}"
                  HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,56" />
     </Grid>
 
     <!-- 提示条 -->
     <Border x:Name="NoticeBar"
             IsVisible="False"
-            Background="#1A1A1A"
-            BorderBrush="#333333"
+            Background="{StaticResource XidengSurfaceAlt}"
+            BorderBrush="{StaticResource XidengOutline}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="14,10"
             Margin="0,28,0,0"
             HorizontalAlignment="Center"
             VerticalAlignment="Top">
-      <TextBlock x:Name="NoticeText" FontSize="13" Foreground="#D8D8D8" TextWrapping="Wrap" MaxWidth="640" />
+      <TextBlock x:Name="NoticeText" FontSize="13" Foreground="{StaticResource XidengTextBody}" TextWrapping="Wrap" MaxWidth="640" />
     </Border>
   </Grid>
 </Window>

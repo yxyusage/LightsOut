@@ -24,7 +24,7 @@
             android:fontFamily="sans-serif-light"
             android:text="--:--"
             android:textColor="@color/xideng_text_primary"
-            android:textSize="60sp" />
+            android:textSize="64sp" />
 
         <TextView
             android:id="@+id/remainingText"
@@ -33,7 +33,7 @@
             android:layout_marginTop="8dp"
             android:text="距离本次熄灯结束 --"
             android:textColor="@color/xideng_text_secondary"
-            android:textSize="14sp" />
+            android:textSize="15sp" />
 
         <TextView
             android:id="@+id/sceneText"
@@ -66,7 +66,7 @@
             android:layout_marginTop="10dp"
             android:gravity="center"
             android:textColor="@color/xideng_text_faint"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:visibility="gone" />
 
         <Space
@@ -104,7 +104,7 @@
             android:layout_marginTop="10dp"
             android:gravity="center"
             android:textColor="@color/xideng_text_faint"
-            android:textSize="11sp" />
+            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/whitelistStatusText"
@@ -113,7 +113,7 @@
             android:layout_marginTop="4dp"
             android:gravity="center"
             android:textColor="@color/xideng_text_faint"
-            android:textSize="11sp" />
+            android:textSize="12sp" />
     </LinearLayout>
 
     <!--

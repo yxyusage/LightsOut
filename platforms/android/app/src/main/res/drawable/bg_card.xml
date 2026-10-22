@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="@color/xideng_surface_alt" />
-    <corners android:radius="14dp" />
+    <!-- 三档半径之一：控件 8 / 卡片 16 / 面板 24（与 Web 的 ——radius-sm/——radius/——radius-lg 一致） -->
+    <corners android:radius="16dp" />
 </shape>

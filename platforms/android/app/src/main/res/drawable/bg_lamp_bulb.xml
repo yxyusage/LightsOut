@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
+    <!-- 灯泡本体：比主色更浅一档的暖色，模拟灯丝的亮度 -->
     <solid android:color="#FFE9DCC0" />
 </shape>

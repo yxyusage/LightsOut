@@ -30,7 +30,7 @@
             android:fontFamily="sans-serif-light"
             android:text="-- 分 -- 秒"
             android:textColor="@color/xideng_text_primary"
-            android:textSize="44sp" />
+            android:textSize="40sp" />
 
         <TextView
             android:id="@+id/warnDetailText"

@@ -19,7 +19,7 @@
             android:fontFamily="sans-serif-light"
             android:text="紧急解除"
             android:textColor="@color/xideng_text_primary"
-            android:textSize="22sp" />
+            android:textSize="24sp" />
 
         <TextView
             android:id="@+id/quotaText"
@@ -80,6 +80,6 @@
             android:layout_marginTop="18dp"
             android:text="每解除一次消耗 1 次每周额度；额度用完后本周只能等熄灯时段自然结束。解除只对今晚这一次生效，明天按计划照常熄灯。"
             android:textColor="@color/xideng_text_faint"
-            android:textSize="11sp" />
+            android:textSize="12sp" />
     </LinearLayout>
 </ScrollView>

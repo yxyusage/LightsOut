@@ -1,20 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- PRD 4.1：极简克制风，主色调为纯黑、深灰，搭配低饱和度白色文字 -->
+    <!--
+      熄灯早睡 · Android 颜色
+
+      ⚠️ 这里必须与 apps/web/styles/app.css 的 :root 保持一致
+      （桌面端 platform/desktop 的 DesignTokens.axaml 也指向同一套值）。
+      三端观感一致是产品的底线 —— 用户不该在不同设备上看到"另一个产品"。
+
+      ## 光晕与渐变已全部移除
+
+      早先界面里有多处彩色模糊阴影（灯泡、按钮、状态点、滑块）。
+      深色背景上的彩色模糊阴影属于纯装饰，夜间还会让元素发虚、刺眼。
+      深度改为由**更亮的表面台阶**与**发丝描边**表达，不用发光。
+
+      ## 文字为什么改成暖中性色
+
+      原来是近白的 #EDEDED。纯白在纯黑上是 21:1 的眩光；靠降透明度压亮度，
+      压到能接受时对比度又掉到 4.5:1 以下。两者不可兼得 —— 除非换色相。
+
+      改为带暖调的中性色：绝对亮度降低了，对比度反而提高了。
+      实测（对 #000000）：
+        text_primary   #E6E0D6  ≈ 16.0 : 1
+        text_body      #C9C3B8  ≈ 12.0 : 1
+        text_secondary #A9A29A  ≈  8.3 : 1
+        text_faint     #827A70  ≈  5.0 : 1   ← 下限，只给非必读元信息
+
+      ## 品牌色修正
+
+      原来的 xideng_primary 是 #8E9BD6（蓝紫），与 Web/桌面的暖琥珀完全不同 ——
+      同一款产品在三端呈现两种品牌色。已改为琥珀。
+    -->
+
+    <!-- 基底 -->
     <color name="xideng_black">#FF000000</color>
-    <color name="xideng_surface">#FF0B0B0C</color>
-    <color name="xideng_surface_alt">#FF141416</color>
+    <color name="xideng_surface">#FF0C0C0F</color>
+    <color name="xideng_surface_alt">#FF131318</color>
     <color name="xideng_outline">#FF2A2A2E</color>
 
-    <!-- 低饱和度白色：夜间不刺眼（PRD 4.4） -->
-    <color name="xideng_text_primary">#FFEDEDED</color>
-    <color name="xideng_text_secondary">#FFA8A8AE</color>
-    <color name="xideng_text_faint">#FF6E6E75</color>
+    <!-- 文字四档（见文件头的实测对比度） -->
+    <color name="xideng_text_primary">#FFE6E0D6</color>
+    <color name="xideng_text_body">#FFC9C3B8</color>
+    <color name="xideng_text_secondary">#FFA9A29A</color>
+    <color name="xideng_text_faint">#FF827A70</color>
 
-    <color name="xideng_primary">#FF8E9BD6</color>
-    <color name="xideng_primary_dark">#FF5C6699</color>
-    <color name="xideng_danger">#FFC97A7A</color>
-    <color name="xideng_success">#FF7FB08A</color>
+    <!-- 品牌色：暖琥珀，与 Web / 桌面一致 -->
+    <color name="xideng_primary">#FFFFD7A0</color>
+    <color name="xideng_primary_dark">#FF7A5C33</color>
 
-    <color name="ic_launcher_background">#FF0B0B0C</color>
+    <!-- 状态色：饱和度压低，夜间不刺眼 -->
+    <color name="xideng_danger">#FFFF9B8A</color>
+    <color name="xideng_success">#FF8FD6A8</color>
+
+    <color name="ic_launcher_background">#FF0C0C0F</color>
 </resources>
