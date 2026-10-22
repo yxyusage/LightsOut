@@ -146,6 +146,40 @@ object NotificationHelper {
             .build()
     }
 
+    /**
+     * 防护降级提醒。
+     *
+     * 无障碍服务被系统关掉、或电池优化未豁免时，防护会掉一环，而用户**完全无从察觉**。
+     * 应用无权自己把无障碍服务重新打开（那是系统安全红线），能做的是让它不再静默失效：
+     * 弹一条可点击的通知，点进去就是加固权限页，一键恢复。
+     *
+     * 刻意**不做成常驻**（setOngoing(false)）：它是一条需要用户处理的待办，
+     * 不是"计划运行中"这种状态。恢复之后由 LockController 主动 cancel。
+     */
+    fun postDegradedProtection(context: Context, detail: String) {
+        val intent = PendingIntent.getActivity(
+            context,
+            7,
+            Intent(context, com.xideng.sleep.ui.HardeningActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val notification = NotificationCompat.Builder(context, Constants.CHANNEL_ALERT)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("防护掉了一环，点这里恢复")
+            .setContentText(detail)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(detail))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ERROR)
+            .setAutoCancel(true)
+            .setOngoing(false)
+            .setContentIntent(intent)
+            .build()
+
+        post(context, Constants.NOTIFICATION_ID_DEGRADED, notification)
+    }
+
     fun post(context: Context, id: Int, notification: Notification) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         try {

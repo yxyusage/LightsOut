@@ -34,7 +34,17 @@ class LockForegroundService : Service() {
     private val graph by lazy { XidengApp.graphOf(this) }
 
     @Volatile private var running = false
-    private var lastNotificationText: String? = null
+
+    /**
+     * 上一次推给通知栏的「文案 + 相位」。
+     *
+     * ⚠️ 必须带上相位，不能只比较文案。这条通知在熄灯时会挂**全屏意图**，
+     * 而全屏意图是"从后台把熄灯界面拉起来"的最后一条通路。
+     * 早先只比文案，结果阶段变成 ACTIVE 但文案恰好没变（例如从别的相位回到
+     * 同一个"熄灯中，距离结束还有 …"）时，通知不会重新 post，**全屏意图也就不会触发** ——
+     * 表现为"挂在后台到点不熄灯，点进去才开始"。
+     */
+    private var lastNotificationKey: String? = null
 
     private var timeChangeReceiver: BroadcastReceiver? = null
 
@@ -54,8 +64,11 @@ class LockForegroundService : Service() {
             Constants.NOTIFICATION_ID_LOCK,
             NotificationHelper.buildLockNotification(this, "熄灯计划运行中", false),
         )
-        lastNotificationText = "熄灯计划运行中"
+        lastNotificationKey = "熄灯计划运行中|off"
         registerTimeChangeReceiver()
+        // 服务被拉起来的这一刻就把看门狗和主闹钟都续上：
+        // 服务可能是被看门狗拉活的，此时闹钟未必还在
+        graph.controller.armSchedules()
         handler.post(ticker)
     }
 
@@ -71,6 +84,13 @@ class LockForegroundService : Service() {
         running = false
         handler.removeCallbacks(ticker)
         unregisterTimeChangeReceiver()
+        // 服务被系统杀掉时，把主闹钟与看门狗重新排一遍：
+        // 这是"服务没了但计划还在"时唯一还能把熄灯拉回来的通路
+        try {
+            graph.controller.armSchedules()
+        } catch (error: Exception) {
+            // 忽略：不能在 onDestroy 里抛异常
+        }
         super.onDestroy()
     }
 
@@ -86,8 +106,10 @@ class LockForegroundService : Service() {
 
     private fun updateNotification(snapshot: EngineSnapshot) {
         val text = notificationText(snapshot)
-        if (text == lastNotificationText) return
-        lastNotificationText = text
+        // 去重键 = 文案 + 相位。相位变化必须重新 post，否则全屏意图不会触发（见字段注释）
+        val key = text + "|" + snapshot.phase.name.lowercase()
+        if (key == lastNotificationKey) return
+        lastNotificationKey = key
         NotificationHelper.post(
             this,
             Constants.NOTIFICATION_ID_LOCK,

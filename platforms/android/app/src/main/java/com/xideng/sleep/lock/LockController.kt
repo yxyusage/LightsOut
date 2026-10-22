@@ -14,6 +14,7 @@ import com.xideng.sleep.ui.BlackoutActivity
 import com.xideng.sleep.ui.WarningActivity
 import com.xideng.sleep.util.CallStateMonitor
 import com.xideng.sleep.util.NotificationHelper
+import com.xideng.sleep.util.Permissions
 import java.time.Instant
 
 /**
@@ -280,10 +281,107 @@ class LockController(private val context: Context, private val graph: AppGraph) 
         tick("time-changed", force = true)
     }
 
+    /**
+     * 只重排闹钟与看门狗，不做相位判定。
+     *
+     * 供前台服务在 onCreate / onDestroy 时调用：服务刚被拉活或即将消失时，
+     * 需要确保"下一次唤醒"这条线索没断——这正是"清理后台后到点不熄灯"的关键一环。
+     */
+    fun armSchedules() {
+        AlarmScheduler.schedule(context, graph.settingsStore.value.plan)
+        AlarmScheduler.scheduleWatchdog(context)
+    }
+
     /** 闹钟到点（PRD 2.2.1） */
     fun onAlarm() {
         startLockService()
         tick("alarm", force = true)
+    }
+
+    /**
+     * 看门狗（每 15 分钟一次，见 [com.xideng.sleep.receiver.WatchdogReceiver]）。
+     *
+     * 厂商 ROM 清理后台是不打招呼的：服务没了、闹钟没重排、无障碍被关，
+     * 用户只会看到"计划还在，但到点什么都不发生"。这一步负责把所有环节拉回正轨。
+     */
+    fun onWatchdog() {
+        // ① 服务被清理过就拉回来
+        startLockService()
+
+        // ② 主闹钟重排一遍：某次调度失败后不会永久失效
+        AlarmScheduler.schedule(context, graph.settingsStore.value.plan)
+
+        // ③ 看门狗自己要续命 —— 否则它自己也会消失
+        AlarmScheduler.scheduleWatchdog(context)
+
+        // ④ 先按正常路径判定一次
+        val snapshot = tick("watchdog", force = true)
+
+        // ⑤ 防护降级检测：无障碍被系统关掉、或电池优化未豁免时，明确告诉用户
+        reportDegradedProtection(snapshot)
+
+        // ⑥ 无障碍不可用时的兜底：用 UsageStatsManager 轮询前台应用
+        pollForegroundFallback(snapshot)
+    }
+
+    /**
+     * 防护降级时发一条常驻通知。
+     *
+     * 这是"无障碍过一段时间自动关闭"唯一能做的事——系统不允许应用自己把无障碍服务重新打开
+     * （那是一条安全红线，任何应用都不该能绕过）。我们能做的是**让它不再静默失效**：
+     * 用户至少知道"防护掉了一环"，并且能一键回到设置页恢复。
+     */
+    private fun reportDegradedProtection(snapshot: EngineSnapshot) {
+        val accessibilityOk = Permissions.isAccessibilityServiceEnabled(context)
+        val batteryOk = Permissions.isIgnoringBatteryOptimizations(context)
+
+        if (accessibilityOk && batteryOk) {
+            NotificationHelper.cancel(context, Constants.NOTIFICATION_ID_DEGRADED)
+            return
+        }
+
+        // 只在计划开启时提醒；计划本身就关着的时候没必要打扰
+        if (!snapshot.settings.plan.enabled) return
+
+        val reasons = buildList {
+            if (!accessibilityOk) add("无障碍服务已被系统关闭，「切走再回来会被拉回」这一层失效")
+            if (!batteryOk) add("本应用未加入电池优化白名单，夜间容易被系统冻结")
+        }
+        NotificationHelper.postDegradedProtection(context, reasons.joinToString("；"))
+    }
+
+    /**
+     * UsageStatsManager 兜底轮询。
+     *
+     * 无障碍服务被关掉之后，应用就"看不见"前台是哪个应用了。但「查看使用情况」权限
+     * 提供了一条不需要无障碍的替代通道：可以查询当前前台包名。
+     *
+     * 代价是**只能轮询、无法即时响应**，所以它放在看门狗里按 15 分钟粒度执行，
+     * 定位是"兜底"而不是"替代"——真正的即时拦截仍然依赖无障碍。
+     */
+    private fun pollForegroundFallback(snapshot: EngineSnapshot) {
+        if (snapshot.phase != Phase.ACTIVE) return
+        if (Permissions.isAccessibilityServiceEnabled(context)) return
+        if (!Permissions.hasUsageStatsAccess(context)) return
+
+        val foreground = Permissions.currentForegroundPackage(context) ?: return
+        if (foreground == context.packageName) return
+        if (isAllowedPackage(foreground, snapshot)) return
+
+        reassertBlackout()
+    }
+
+    /**
+     * 某个包名在当前设置下是否放行（白名单应用 + 系统放行包名）。
+     *
+     * 与 [com.xideng.sleep.service.SleepAccessibilityService] 共用同一份判定，
+     * 避免两条通道对"什么算放行"给出不同答案。
+     */
+    fun isAllowedPackage(packageName: String, snapshot: EngineSnapshot): Boolean {
+        for (app in snapshot.settings.whitelist.apps) {
+            if (app.packageName.isNotEmpty() && app.packageName == packageName) return true
+        }
+        return SYSTEM_ALLOWED.any { it == packageName }
     }
 
     /** 紧急解除成功后调用（PRD 2.2.5） */
@@ -377,5 +475,28 @@ class LockController(private val context: Context, private val graph: AppGraph) 
     companion object {
         /** 演示模式下使用的伪时段键，绝不会与真实的 YYYY-MM-DD 冲突 */
         private const val DEMO_WINDOW_KEY = "demo"
+
+        /**
+         * 熄灯期间必须放行的系统包名。
+         *
+         * 对应 PRD 2.2.4「系统来电、短信、闹钟默认不受熄灯模式限制」。
+         * 除了电话/短信本身，还要放行 SystemUI（来电界面、状态栏）、权限控制器与电话服务，
+         * 否则接电话会被自己的熄灯界面盖住。
+         *
+         * **刻意不包含桌面（Launcher）**：PRD 2.2.1 要求"解锁设备后直接进入熄灯黑屏界面，
+         * 不会跳转至系统桌面"，所以按 Home 也会被立刻重新接管。
+         */
+        val SYSTEM_ALLOWED = listOf(
+            "com.android.systemui",
+            "com.android.phone",
+            "com.android.server.telecom",
+            "com.android.dialer",
+            "com.google.android.dialer",
+            "com.android.incallui",
+            "com.android.mms",
+            "com.google.android.apps.messaging",
+            "com.android.permissioncontroller",
+            "com.google.android.permissioncontroller",
+        )
     }
 }

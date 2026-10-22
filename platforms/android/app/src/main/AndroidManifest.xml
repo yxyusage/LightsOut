@@ -39,8 +39,15 @@
     <!-- 悬浮窗权限（PRD 5.1）：在有该权限时，前台服务才能在后台合法地拉起熄灯界面 -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
-    <!-- 到点精确触发（PRD 2.2.1）。未授权时自动降级为非精确闹钟 -->
+    <!--
+      到点精确触发（PRD 2.2.1）。
+      · SCHEDULE_EXACT_ALARM（Android 12+）：需要用户在「闹钟与提醒」里授权，可能被拒；
+      · USE_EXACT_ALARM（Android 13+）：**系统自动授予**，专门给闹钟类应用。
+        本应用的核心功能就是"到点必须熄灯"，属于正当用途。
+      两者都声明：13+ 优先拿到自动授予的那个，12 及以下只有前者。
+    -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <!-- 预告弹窗需要在锁屏上全屏显示（PRD 2.1.2） -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
@@ -157,10 +164,16 @@
             android:parentActivityName=".ui.MainActivity" />
 
         <!-- 前台服务保活（PRD 三）。Android 14 要求声明 foregroundServiceType。 -->
+        <!--
+          stopWithTask="false"：从最近任务里划掉应用时**不要**停掉这个服务。
+          这是"清理后台就被杀"最直接的一道防线 —— 不写的话部分 ROM 会连带停服务。
+          注意：厂商 ROM 可能仍会强杀，所以还要配合 WatchdogReceiver 定期拉活。
+        -->
         <service
             android:name=".service.LockForegroundService"
             android:enabled="true"
             android:exported="false"
+            android:stopWithTask="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
@@ -235,6 +248,16 @@
         <!-- AlarmManager 到点唤醒（PRD 2.2.1） -->
         <receiver
             android:name=".receiver.AlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <!--
+          看门狗（每 15 分钟）：把被 ROM 清掉的前台服务拉回来、重排主闹钟、
+          检查无障碍服务是否被系统关闭。厂商 ROM 清理后台不打招呼，
+          没有这一步，熄灯会在用户毫不知情的情况下永久失效。
+        -->
+        <receiver
+            android:name=".receiver.WatchdogReceiver"
             android:enabled="true"
             android:exported="false" />
     </application>

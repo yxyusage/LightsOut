@@ -65,6 +65,14 @@ object Constants {
     const val NOTIFICATION_ID_LOCK = 1001
     const val NOTIFICATION_ID_AUDIO = 1002
     const val NOTIFICATION_ID_WARNING = 1003
+
+    /**
+     * 防护降级提醒（无障碍被关、电池优化未豁免）。
+     *
+     * 独立于主通知：主通知是"计划运行中"的常驻状态，
+     * 这条是"出问题了，你需要处理"，两者不该互相覆盖。
+     */
+    const val NOTIFICATION_ID_DEGRADED = 1004
 }
 
 /** 工作日 / 周末两套独立熄灯时段（PRD 2.1.1） */

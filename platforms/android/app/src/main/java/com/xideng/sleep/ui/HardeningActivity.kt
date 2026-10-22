@@ -248,6 +248,22 @@ class HardeningActivity : AppCompatActivity() {
                 grantedLabel = "去设置",
                 action = { safeStart(Permissions.backgroundRunIntent(this)) },
             ),
+            /*
+              这一项没有 API 可查、也没有 Intent 能直达（各家 ROM 的入口都不一样），
+              所以只做**说明**，不做跳转。
+
+              但它恰恰是国产 ROM 上"清理后台就被杀"最有效的用户侧手段：
+              在多任务界面把卡片下拉/长按锁定之后，系统就不会在“一键清理”时把它清掉。
+              写清楚操作路径，比给一个点进去也找不到地方的按钮有用。
+            */
+            Item(
+                section = Section.KEEPALIVE,
+                title = "在最近任务里锁定本应用",
+                impact = "打开多任务界面，把「熄灯早睡」的卡片向下拉一下（或长按卡片选择“锁定”）。锁定后，系统「一键清理」不会把它清掉——这是国产 ROM 上最有效的一步。鸿蒙 / MagicOS / ColorOS / MIUI 都支持。",
+                granted = false,
+                badge = "手动操作",
+                informational = true,
+            ),
 
             /* ── 防破解权限 ── */
             Item(
